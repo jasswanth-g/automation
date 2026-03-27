@@ -19,6 +19,13 @@ const creator = new FFCreator({
   outputDir,
   width: 600,
   height: 400,
+  fps: 30,
+  bitrate: '8000k',
+  outputOptions: [
+    '-crf', '16',
+    '-preset', 'slow',
+    '-pix_fmt', 'yuv420p',
+  ],
   log: true,
 });
 
@@ -38,8 +45,15 @@ scene1.addAudio(audio);
 // fimg1.addEffect('moveInRight', 1.5, 1.2);
 // scene1.addChild(fimg1);
 
-const text = new FFText({ text: 'Hello World my self an AI lets share life lessons in this video', x: 100, y: 100 });
-text.setColor('#000000');
+const text = new FFText({
+  text: 'Hello World my self an AI lets share life lessons in this video',
+  x: 100,
+  y: 100,
+  fontSize: 40,
+  color: '#000000',
+  textAlign: 'center',
+  maxWidth: 300,
+});
 // text.setBackgroundColor('#000000');
 // text.addEffect('fadeIn', 1, 1);
 scene1.addChild(text);
