@@ -1,9 +1,11 @@
 import 'reflect-metadata';
 import express from 'express';
+import cors from 'cors';
 import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
 import { VideoController } from './controllers/video.controller.js';
-import { createExpressServer } from 'routing-controllers';
+import { SongController } from './controllers/song.controller.js';
+import { useExpressServer } from 'routing-controllers';
 
 const port: number = 3000;
 
@@ -17,8 +19,8 @@ const swaggerOptions = {
     },
     servers: [
       {
-        url: `http://localhost:${port}/api`,
-        description: 'Development server with /api prefix',
+        url: `http://localhost:${port}`,
+        description: 'Server',
       },
     ],
   },
@@ -27,11 +29,23 @@ const swaggerOptions = {
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
 
-// Create Express app with routing-controllers
-const app = createExpressServer({
-  controllers: [VideoController],
-  // routePrefix: '/api',
-  development: true
+const app = express();
+
+// Apply CORS before other middlewares
+app.use(cors());
+
+// Increase payload limit for Base64 songs
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ limit: '100mb', extended: true }));
+
+// Initialize routing-controllers on the existing app
+useExpressServer(app, {
+  controllers: [VideoController, SongController],
+  development: true,
+  classTransformer: true,
+  // Disable default body parser as we've already added it with limits
+  // routing-controllers doesn't have a direct "disable" for body parser in useExpressServer 
+  // but it will skip if already parsed or we can just let it be if it's compatible.
 });
 
 // Add Swagger documentation at /api/docs
