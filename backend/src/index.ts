@@ -5,9 +5,16 @@ import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
 import { VideoController } from './controllers/video.controller.js';
 import { SongController } from './controllers/song.controller.js';
-import { useExpressServer } from 'routing-controllers';
+import { MovieController } from './controllers/movie.controller.js';
+import { useExpressServer, useContainer } from 'routing-controllers';
+import { Container } from 'typedi';
+import { ResponseInterceptor } from './interceptors/response.interceptor.js';
+import { ErrorMiddleware } from './middlewares/error.middleware.js';
 
 const port: number = 3000;
+
+// Tell routing-controllers to use typedi Container
+useContainer(Container);
 
 const swaggerOptions = {
   definition: {
@@ -24,7 +31,7 @@ const swaggerOptions = {
       },
     ],
   },
-  apis: ['./src/controllers/*.ts'], 
+  apis: ['./src/controllers/*.ts', './src/dtos/*.ts'], 
 };
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
@@ -40,7 +47,11 @@ app.use(express.urlencoded({ limit: '100mb', extended: true }));
 
 // Initialize routing-controllers on the existing app
 useExpressServer(app, {
-  controllers: [VideoController, SongController],
+  controllers: [VideoController, SongController, MovieController],
+  interceptors: [ResponseInterceptor],
+  middlewares: [ErrorMiddleware],
+  defaultErrorHandler: false, // Use our own ErrorMiddleware
+  validation: true, // Enable class-validator
   development: true,
   classTransformer: true,
   // Disable default body parser as we've already added it with limits

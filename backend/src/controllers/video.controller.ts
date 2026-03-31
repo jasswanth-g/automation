@@ -1,9 +1,8 @@
 import { Get, Controller } from 'routing-controllers';
-import { VideoService } from '../services/video.service.js';
+import { Service } from 'typedi';
 
-const videoService = new VideoService();
-
-@Controller('/api')
+@Service()
+@Controller()
 export class VideoController {
   /**
    * @openapi

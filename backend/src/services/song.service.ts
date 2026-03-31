@@ -3,6 +3,7 @@ import { SongRepository } from '../repositories/song.repository.js';
 import type { SongMetadata } from '../repositories/song.repository.js';
 import config from '../config/config.json' with { type: 'json' };
 import colors from 'colors';
+import { cleanBase64, isValidBase64 } from '../utils/base64.util.js';
 
 export class SongService {
   private imagekit: ImageKit;
@@ -17,12 +18,18 @@ export class SongService {
     this.repository = new SongRepository();
   }
 
-  async uploadSong(name: string, base64: string): Promise<SongMetadata> {
+  async uploadSong(name: string, base64: string, movie_id?: string): Promise<SongMetadata> {
     try {
       console.log(colors.cyan(`[SongService] Starting upload for: ${name}`));
       
+      if (!isValidBase64(base64)) {
+        throw new Error('Invalid Base64 string for audio');
+      }
+
+      const cleanedBase64 = cleanBase64(base64);
+
       // 1. Decode base64 to buffer
-      const buffer = Buffer.from(base64, 'base64');
+      const buffer = Buffer.from(cleanedBase64, 'base64');
       if (buffer.length === 0) throw new Error('Invalid or empty Base64 string');
 
       // 2. Upload to ImageKit
@@ -38,6 +45,7 @@ export class SongService {
       console.log(colors.yellow(`[SongService] Storing metadata in Supabase...`));
       const result = await this.repository.create({
         name,
+        movie_id,
         url: uploadResponse.url,
         imagekit_file_id: uploadResponse.fileId,
       });
@@ -59,6 +67,15 @@ export class SongService {
     }
   }
 
+  async getSongsByMovieId(movieId: string): Promise<SongMetadata[]> {
+    try {
+      return await this.repository.findByMovieId(movieId);
+    } catch (error: any) {
+      console.error(colors.red(`[SongService] Failed to fetch songs for movie ${movieId}: ${error.message}`));
+      throw new Error(`Failed to retrieve songs for movie: ${error.message}`);
+    }
+  }
+
   async getSongById(id: string): Promise<SongMetadata | null> {
     try {
       return await this.repository.findById(id);
@@ -68,15 +85,21 @@ export class SongService {
     }
   }
 
-  async updateSong(id: string, name?: string, base64?: string): Promise<SongMetadata> {
+  async updateSong(id: string, name?: string, base64?: string, movie_id?: string): Promise<SongMetadata> {
     try {
       const existingSong = await this.repository.findById(id);
       if (!existingSong) throw new Error('Song not found in database');
 
       let updates: Partial<SongMetadata> = {};
       if (name) updates.name = name;
+      if (movie_id) updates.movie_id = movie_id;
 
       if (base64) {
+        if (!isValidBase64(base64)) {
+          throw new Error('Invalid Base64 string for audio');
+        }
+
+        const cleanedBase64 = cleanBase64(base64);
         console.log(colors.yellow(`[SongService] Replacing file in ImageKit...`));
         // Delete old file
         try {
@@ -86,7 +109,7 @@ export class SongService {
         }
 
         // Upload new file
-        const buffer = Buffer.from(base64, 'base64');
+        const buffer = Buffer.from(cleanedBase64, 'base64');
         const uploadResponse = await this.imagekit.upload({
           file: buffer,
           fileName: `${(name || existingSong.name).replace(/\s+/g, '_')}_${Date.now()}.mp3`,

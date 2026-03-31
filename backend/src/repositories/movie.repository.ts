@@ -1,28 +1,27 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import config from '../config/config.json' with { type: 'json' };
 
-export interface SongMetadata {
+export interface MovieMetadata {
   id?: string | undefined;
-  movie_id?: string | undefined;
-  name: string;
-  url: string;
+  title: string;
+  description?: string | undefined;
+  image_url: string;
   imagekit_file_id: string;
-  duration?: number | undefined;
   created_at?: string | undefined;
   updated_at?: string | undefined;
 }
 
-export class SongRepository {
+export class MovieRepository {
   private supabase: SupabaseClient;
 
   constructor() {
     this.supabase = createClient(config.supabase.url, config.supabase.key);
   }
 
-  async create(song: SongMetadata): Promise<SongMetadata> {
+  async create(movie: MovieMetadata): Promise<MovieMetadata> {
     const { data, error } = await this.supabase
-      .from('songs')
-      .insert([song])
+      .from('movies')
+      .insert([movie])
       .select()
       .single();
 
@@ -30,9 +29,9 @@ export class SongRepository {
     return data;
   }
 
-  async findAll(): Promise<SongMetadata[]> {
+  async findAll(): Promise<MovieMetadata[]> {
     const { data, error } = await this.supabase
-      .from('songs')
+      .from('movies')
       .select('*')
       .order('created_at', { ascending: false });
 
@@ -40,20 +39,9 @@ export class SongRepository {
     return data || [];
   }
 
-  async findByMovieId(movieId: string): Promise<SongMetadata[]> {
+  async findById(id: string): Promise<MovieMetadata | null> {
     const { data, error } = await this.supabase
-      .from('songs')
-      .select('*')
-      .eq('movie_id', movieId)
-      .order('created_at', { ascending: true });
-
-    if (error) throw new Error(`Supabase List By Movie Error: ${error.message}`);
-    return data || [];
-  }
-
-  async findById(id: string): Promise<SongMetadata | null> {
-    const { data, error } = await this.supabase
-      .from('songs')
+      .from('movies')
       .select('*')
       .eq('id', id)
       .single();
@@ -62,9 +50,9 @@ export class SongRepository {
     return data;
   }
 
-  async update(id: string, updates: Partial<SongMetadata>): Promise<SongMetadata> {
+  async update(id: string, updates: Partial<MovieMetadata>): Promise<MovieMetadata> {
     const { data, error } = await this.supabase
-      .from('songs')
+      .from('movies')
       .update({ ...updates, updated_at: new Date().toISOString() })
       .eq('id', id)
       .select()
@@ -76,7 +64,7 @@ export class SongRepository {
 
   async delete(id: string): Promise<void> {
     const { error } = await this.supabase
-      .from('songs')
+      .from('movies')
       .delete()
       .eq('id', id);
 
