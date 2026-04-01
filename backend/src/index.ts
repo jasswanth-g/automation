@@ -11,7 +11,7 @@ import { Container } from 'typedi';
 import { ResponseInterceptor } from './interceptors/response.interceptor.js';
 import { ErrorMiddleware } from './middlewares/error.middleware.js';
 
-const port: number = 3000;
+const port = process.env.PORT || 3000;
 
 // Tell routing-controllers to use typedi Container
 useContainer(Container);
