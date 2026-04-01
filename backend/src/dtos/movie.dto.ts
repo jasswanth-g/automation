@@ -45,6 +45,14 @@ export class CreateMovieDto {
 export class UpdateMovieDto {
   @IsString()
   @IsOptional()
+  title?: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @IsString()
+  @IsOptional()
   @IsBase64({}, { message: 'Invalid Base64 string' })
   image_base64?: string;
 }
