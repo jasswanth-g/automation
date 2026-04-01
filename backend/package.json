@@ -17,7 +17,7 @@
     "@imagekit/javascript": "^5.2.2",
     "@supabase/supabase-js": "^2.100.1",
     "class-transformer": "^0.5.1",
-    "class-validator": "^0.15.1",
+    "class-validator": "^0.14.1",
     "colors": "^1.4.0",
     "cors": "^2.8.6",
     "express": "^5.2.1",
