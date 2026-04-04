@@ -6,6 +6,7 @@ import swaggerJsdoc from 'swagger-jsdoc';
 import { VideoController } from './controllers/video.controller.js';
 import { SongController } from './controllers/song.controller.js';
 import { MovieController } from './controllers/movie.controller.js';
+import { QuoteController } from './controllers/quote.controller.js';
 import { useExpressServer, useContainer } from 'routing-controllers';
 import { Container } from 'typedi';
 import { ResponseInterceptor } from './interceptors/response.interceptor.js';
@@ -47,7 +48,7 @@ app.use(express.urlencoded({ limit: '100mb', extended: true }));
 
 // Initialize routing-controllers on the existing app
 useExpressServer(app, {
-  controllers: [VideoController, SongController, MovieController],
+  controllers: [VideoController, SongController, MovieController, QuoteController],
   interceptors: [ResponseInterceptor],
   middlewares: [ErrorMiddleware],
   defaultErrorHandler: false, // Use our own ErrorMiddleware

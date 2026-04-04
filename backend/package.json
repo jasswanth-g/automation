@@ -7,8 +7,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
+    "type-check": "tsc --noEmit",
     "start": "node dist/index.js",
-    "dev": "nodemon"
+    "dev": "npm run type-check && nodemon"
   },
   "keywords": [],
   "author": "",
