@@ -1,7 +1,6 @@
 import ImageKit from 'imagekit';
 import { SongRepository } from '../repositories/song.repository.js';
 import type { SongMetadata } from '../repositories/song.repository.js';
-import config from '../config/config.json' with { type: 'json' };
 import colors from 'colors';
 import { cleanBase64, isValidBase64 } from '../utils/base64.util.js';
 
@@ -11,9 +10,9 @@ export class SongService {
 
   constructor() {
     this.imagekit = new ImageKit({
-      publicKey: config.imagekit.publicKey,
-      privateKey: config.imagekit.privateKey,
-      urlEndpoint: config.imagekit.urlEndpoint,
+      publicKey: process.env.IMAGEKIT_PUBLIC_KEY || '',
+      privateKey: process.env.IMAGEKIT_PRIVATE_KEY || '',
+      urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT || '',
     });
     this.repository = new SongRepository();
   }

@@ -1,5 +1,4 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import config from '../config/config.json' with { type: 'json' };
 
 export interface SongMetadata {
   id?: string | undefined;
@@ -16,7 +15,7 @@ export class SongRepository {
   private supabase: SupabaseClient;
 
   constructor() {
-    this.supabase = createClient(config.supabase.url, config.supabase.key);
+    this.supabase = createClient(process.env.SUPABASE_URL || '', process.env.SUPABASE_KEY || '');
   }
 
   async create(song: SongMetadata): Promise<SongMetadata> {

@@ -1,5 +1,4 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import config from '../config/config.json' with { type: 'json' };
 
 export interface MovieMetadata {
   id?: string | undefined;
@@ -15,7 +14,7 @@ export class MovieRepository {
   private supabase: SupabaseClient;
 
   constructor() {
-    this.supabase = createClient(config.supabase.url, config.supabase.key);
+    this.supabase = createClient(process.env.SUPABASE_URL || '', process.env.SUPABASE_KEY || '');
   }
 
   async create(movie: MovieMetadata): Promise<MovieMetadata> {

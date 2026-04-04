@@ -27,7 +27,7 @@ const swaggerOptions = {
     },
     servers: [
       {
-        url: `http://localhost:${port}`,
+        url: process.env.APP_URL || process.env.RENDER_EXTERNAL_URL || `http://localhost:${port}`,
         description: 'Server',
       },
     ],
@@ -63,7 +63,8 @@ useExpressServer(app, {
 // Add Swagger documentation at /api/docs
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
+const baseUrl = process.env.APP_URL || `http://localhost:${port}`;
 app.listen(port, () => {
-  console.log(`Example app listening on port http://localhost:${port}`);
-  console.log(`Swagger docs available at http://localhost:${port}/api/docs`);
+  console.log(`Example app listening on port ${port}`);
+  console.log(`Swagger docs available at ${baseUrl}/api/docs`);
 });

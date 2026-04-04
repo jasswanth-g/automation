@@ -1,5 +1,4 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import config from '../config/config.json' with { type: 'json' };
 
 export interface QuoteMetadata {
   id?: string | undefined;
@@ -17,7 +16,7 @@ export class QuoteRepository {
   private supabase: SupabaseClient;
 
   constructor() {
-    this.supabase = createClient(config.supabase.url, config.supabase.key);
+    this.supabase = createClient(process.env.SUPABASE_URL || '', process.env.SUPABASE_KEY || '');
   }
 
   async create(quote: QuoteMetadata): Promise<QuoteMetadata> {
