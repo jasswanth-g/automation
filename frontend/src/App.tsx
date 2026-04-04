@@ -1,18 +1,20 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Navbar from './components/Navbar';
+import Sidebar from './components/Sidebar';
 import MovieList from './pages/MovieList';
 import MovieDetails from './pages/MovieDetails';
 import MovieForm from './pages/MovieForm';
+import SongList from './pages/SongList';
 import './App.css';
 
 function App() {
   return (
     <Router>
       <div className="app-container">
-        <Navbar />
+        <Sidebar />
         <main className="main-content">
           <Routes>
             <Route path="/" element={<MovieList />} />
+            <Route path="/songs" element={<SongList />} />
             <Route path="/movie/new" element={<MovieForm />} />
             <Route path="/movie/edit/:id" element={<MovieForm />} />
             <Route path="/movie/:id" element={<MovieDetails />} />

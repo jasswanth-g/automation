@@ -1,11 +1,80 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { getMovie } from '../api/movie';
 import { getSongs, deleteSong } from '../api/song';
 import type { Movie, Song } from '../types';
 import SongForm from '../components/SongForm';
-import { Loader2, ArrowLeft, Plus, Music, Trash2, Calendar, Edit, Play } from 'lucide-react';
+import { Loader2, ArrowLeft, Plus, Music, Trash2, Calendar, Edit, Play, MoreVertical } from 'lucide-react';
 import './MovieDetails.css';
+
+interface SongItemProps {
+  song: Song;
+  index: number;
+  isActive: boolean;
+  onPlay: (song: Song) => void;
+  onEdit: (song: Song) => void;
+  onDelete: (id: string) => void;
+}
+
+const SongItem = ({ song, index, isActive, onPlay, onEdit, onDelete }: SongItemProps) => {
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+
+    if (showMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showMenu]);
+
+  return (
+    <div className={`song-item ${isActive ? 'active' : ''} ${showMenu ? 'menu-open' : ''}`}>
+      <div className="song-index">{index + 1}</div>
+      <button 
+        className="play-icon-btn"
+        onClick={() => onPlay(song)}
+      >
+        <Play size={18} fill={isActive ? "currentColor" : "none"} />
+      </button>
+      <div className="song-info">
+        <span className="song-name">{song.name}</span>
+      </div>
+      <div className="song-actions-container" ref={menuRef}>
+        <button 
+          className="icon-btn menu-toggle" 
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowMenu(!showMenu);
+          }}
+        >
+          <MoreVertical size={18} />
+        </button>
+        
+        {showMenu && (
+          <div className="song-dropdown">
+            <button onClick={() => { onEdit(song); setShowMenu(false); }} className="dropdown-item">
+              <Edit size={16} />
+              <span>Edit</span>
+            </button>
+            <button onClick={() => { onDelete(song.id); setShowMenu(false); }} className="dropdown-item danger">
+              <Trash2 size={16} />
+              <span>Delete</span>
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 
 const MovieDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -139,29 +208,15 @@ const MovieDetails = () => {
         ) : (
           <div className="song-list card">
             {songs.map((song, index) => (
-              <div 
-                key={song.id} 
-                className={`song-item ${activeSong?.id === song.id ? 'active' : ''}`}
-              >
-                <div className="song-index">{index + 1}</div>
-                <button 
-                  className="play-icon-btn"
-                  onClick={() => setActiveSong(song)}
-                >
-                  <Play size={18} fill={activeSong?.id === song.id ? "currentColor" : "none"} />
-                </button>
-                <div className="song-info">
-                  <span className="song-name">{song.name}</span>
-                </div>
-                <div className="song-actions">
-                  <button onClick={() => handleEditSong(song)} className="icon-btn" title="Edit Song">
-                    <Edit size={16} />
-                  </button>
-                  <button onClick={() => handleDeleteSong(song.id)} className="icon-btn danger" title="Delete Song">
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </div>
+              <SongItem 
+                key={song.id}
+                song={song}
+                index={index}
+                isActive={activeSong?.id === song.id}
+                onPlay={setActiveSong}
+                onEdit={handleEditSong}
+                onDelete={handleDeleteSong}
+              />
             ))}
           </div>
         )}

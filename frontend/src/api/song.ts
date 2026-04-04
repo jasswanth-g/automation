@@ -8,5 +8,5 @@ export const getSongs = (movieId?: string) => {
 
 export const getSong = (id: string) => api.get<any, ApiResponse<Song>>(`/songs/${id}`);
 export const createSong = (data: CreateSongRequest) => api.post<any, ApiResponse<Song>>('/songs', data);
-export const updateSong = (id: string, data: UpdateSongRequest) => api.put<any, ApiResponse<Song>>(`/songs/${id}`, data);
+export const updateSong = (id: string, data: UpdateSongRequest) => api.patch<any, ApiResponse<Song>>(`/songs/${id}`, data);
 export const deleteSong = (id: string) => api.delete<any, ApiResponse<void>>(`/songs/${id}`);

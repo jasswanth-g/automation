@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { getMovies, deleteMovie } from '../api/movie';
 import type { Movie } from '../types';
 import MovieCard from '../components/MovieCard';
-import { Loader2, Film } from 'lucide-react';
+import { Loader2, Film, Plus } from 'lucide-react';
 import './MovieList.css';
 
 const MovieList = () => {
@@ -59,8 +60,16 @@ const MovieList = () => {
   return (
     <div className="movie-list-page">
       <header className="page-header">
-        <h1>Movies</h1>
-        <p className="subtitle">Manage your movie collection and songs.</p>
+        <div className="header-content">
+          <div>
+            <h1>Movies</h1>
+            <p className="subtitle">Manage your movie collection and songs.</p>
+          </div>
+          <Link to="/movie/new" className="btn btn-primary">
+            <Plus size={20} />
+            <span>New Movie</span>
+          </Link>
+        </div>
       </header>
 
       {movies.length === 0 ? (
@@ -68,6 +77,10 @@ const MovieList = () => {
           <Film size={64} />
           <h3>No movies found</h3>
           <p>Start by adding a new movie to your collection.</p>
+          <Link to="/movie/new" className="btn btn-primary">
+            <Plus size={20} />
+            <span>Add your first movie</span>
+          </Link>
         </div>
       ) : (
         <div className="grid">
