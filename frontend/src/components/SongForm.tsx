@@ -3,7 +3,7 @@ import { createSong, updateSong } from '../api/song';
 import { getMovies } from '../api/movie';
 import type { Song, Movie } from '../types';
 import { fileToBase64 } from '../utils/base64';
-import { Loader2, X, Music, Upload, Film } from 'lucide-react';
+import { Loader2, X, Music, Upload } from 'lucide-react';
 import './SongForm.css';
 
 interface SongFormProps {

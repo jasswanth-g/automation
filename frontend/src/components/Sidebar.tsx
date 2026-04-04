@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Film, Music } from 'lucide-react';
+import { Film } from 'lucide-react';
 import './Sidebar.css';
 
 const Sidebar = () => {
