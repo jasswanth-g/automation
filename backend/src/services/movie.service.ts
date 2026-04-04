@@ -43,7 +43,7 @@ export class MovieService {
 
       const result = await this.movieRepository.create({
         title,
-        description,
+        // description,
         image_url: uploadResponse.url,
         imagekit_file_id: uploadResponse.fileId,
       });
