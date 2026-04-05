@@ -43,6 +43,33 @@ export interface UpdateSongRequest {
   base64?: string;
 }
 
+export interface Quote {
+  id: string;
+  text: string;
+  author?: string;
+  category?: string;
+  source?: string;
+  status: 'created' | 'posted';
+  video_status: 'pending' | 'created';
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateQuoteRequest {
+  text: string;
+  author?: string;
+  category?: string;
+  source?: string;
+}
+
+export interface UpdateQuoteRequest {
+  text?: string;
+  author?: string;
+  category?: string;
+  status?: 'created' | 'posted';
+  video_status?: 'pending' | 'created';
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   message?: string;
