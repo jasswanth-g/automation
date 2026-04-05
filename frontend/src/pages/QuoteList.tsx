@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { getQuotes, deleteQuote } from '../api/quote';
 import type { Quote } from '../types';
 import QuoteForm from '../components/QuoteForm';
-import { Loader2, Quote as QuoteIcon, Trash2, Edit, Plus, Filter, CheckCircle2, Clock } from 'lucide-react';
+import VideoGenerator from '../components/VideoGenerator';
+import { Loader2, Quote as QuoteIcon, Trash2, Edit, Plus, Filter, CheckCircle2, Clock, Video } from 'lucide-react';
 import './QuoteList.css';
 
 const QuoteList = () => {
@@ -12,6 +13,8 @@ const QuoteList = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
   const [filter, setFilter] = useState<{ status?: string; video_status?: string }>({});
+  
+  const [selectedQuoteForVideo, setSelectedQuoteForVideo] = useState<Quote | null>(null);
 
   useEffect(() => {
     fetchQuotes();
@@ -54,6 +57,11 @@ const QuoteList = () => {
   const handleSuccess = () => {
     fetchQuotes();
     setIsModalOpen(false);
+  };
+
+  const handleVideoSuccess = () => {
+    fetchQuotes();
+    setSelectedQuoteForVideo(null);
   };
 
   if (loading && quotes.length === 0) {
@@ -144,6 +152,16 @@ const QuoteList = () => {
                       Video: {quote.video_status}
                     </span>
                   </div>
+                  {quote.video_status !== 'created' && (
+                    <button 
+                      onClick={() => setSelectedQuoteForVideo(quote)} 
+                      className="btn btn-primary btn-sm mt-2"
+                      style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
+                    >
+                      <Video size={14} />
+                      Generate Video
+                    </button>
+                  )}
                 </div>
                 
                 <div className="quote-actions">
@@ -165,6 +183,14 @@ const QuoteList = () => {
           quote={editingQuote}
           onClose={() => setIsModalOpen(false)}
           onSuccess={handleSuccess}
+        />
+      )}
+
+      {selectedQuoteForVideo && (
+        <VideoGenerator 
+          quote={selectedQuoteForVideo}
+          onClose={() => setSelectedQuoteForVideo(null)}
+          onSuccess={handleVideoSuccess}
         />
       )}
     </div>

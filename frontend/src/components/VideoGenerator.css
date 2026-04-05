@@ -1,0 +1,70 @@
+.video-gen-body {
+  padding: 1rem 0;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.mx-auto {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.mb-4 { margin-bottom: 1rem; }
+.mb-6 { margin-bottom: 1.5rem; }
+.mt-1 { margin-top: 0.25rem; }
+.mt-2 { margin-top: 0.5rem; }
+.mt-4 { margin-top: 1rem; }
+.mt-6 { margin-top: 1.5rem; }
+.mt-8 { margin-top: 2rem; }
+.p-4 { padding: 1rem; }
+.p-8 { padding: 2rem; }
+
+.bg-gray-50 {
+  background-color: #f9fafb;
+}
+
+.rounded-lg {
+  border-radius: 0.5rem;
+}
+
+.italic {
+  font-style: italic;
+}
+
+.text-green-500 {
+  color: #10b981;
+}
+
+.capitalize {
+  text-transform: capitalize;
+}
+
+.font-bold {
+  font-weight: 700;
+}
+
+.status-text {
+  font-size: 1.1rem;
+}
+
+.select-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.select-loader {
+  position: absolute;
+  right: 2.5rem;
+  color: var(--primary);
+}
+
+.text-xs {
+  font-size: 0.75rem;
+}
+
+.text-danger {
+  color: var(--danger);
+}

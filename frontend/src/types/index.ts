@@ -70,6 +70,21 @@ export interface UpdateQuoteRequest {
   video_status?: 'pending' | 'created';
 }
 
+export interface VideoStatus {
+  id: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  url?: string;
+  error?: string;
+  quote_id?: string;
+  song_id?: string;
+  created_at: string;
+}
+
+export interface GenerateVideoRequest {
+  quote_id: string;
+  song_id: string;
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   message?: string;
