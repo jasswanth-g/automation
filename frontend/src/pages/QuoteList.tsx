@@ -152,16 +152,28 @@ const QuoteList = () => {
                       Video: {quote.video_status}
                     </span>
                   </div>
-                  {quote.video_status !== 'created' && (
-                    <button 
-                      onClick={() => setSelectedQuoteForVideo(quote)} 
-                      className="btn btn-primary btn-sm mt-2"
-                      style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
-                    >
-                      <Video size={14} />
-                      Generate Video
-                    </button>
+                  {quote.video_status === 'created' && quote.video_url && (
+                    <div className="mt-2">
+                      <a 
+                        href={quote.video_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-primary flex items-center gap-1 font-semibold"
+                        style={{ fontSize: '0.85rem' }}
+                      >
+                        <Video size={14} />
+                        <span>Open Generated Video</span>
+                      </a>
+                    </div>
                   )}
+                  <button 
+                    onClick={() => setSelectedQuoteForVideo(quote)} 
+                    className="btn btn-outline btn-sm mt-2"
+                    style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
+                  >
+                    <Video size={14} />
+                    {quote.video_status === 'created' ? 'Regenerate Video' : 'Generate Video'}
+                  </button>
                 </div>
                 
                 <div className="quote-actions">

@@ -8,6 +8,7 @@ export interface QuoteMetadata {
   source?: string | undefined;
   status?: string | undefined;
   video_status?: string | undefined;
+  video_url?: string | undefined;
   created_at?: string | undefined;
   updated_at?: string | undefined;
 }
@@ -33,11 +34,19 @@ export class QuoteRepository {
   async findAll(): Promise<QuoteMetadata[]> {
     const { data, error } = await this.supabase
       .from('quotes')
-      .select('*')
+      .select('*, videos!left(url, status)')
       .order('created_at', { ascending: false });
 
     if (error) throw new Error(`Supabase List Quotes Error: ${error.message}`);
-    return data || [];
+    
+    return (data || []).map((quote: any) => {
+      // Find the first completed video url if it exists
+      const completedVideo = quote.videos?.find((v: any) => v.status === 'completed');
+      return {
+        ...quote,
+        video_url: completedVideo?.url
+      };
+    });
   }
 
   async findById(id: string): Promise<QuoteMetadata | null> {

@@ -52,6 +52,7 @@ export interface Quote {
   source?: string;
   status: 'created' | 'posted';
   video_status: 'pending' | 'created';
+  video_url?: string;
   created_at: string;
   updated_at: string;
 }
@@ -80,14 +81,16 @@ export interface VideoStatus {
   song_id?: string;
   created_at: string;
 }
-
 export interface GenerateVideoRequest {
   quote_id: string;
   song_id: string;
+  text?: string;
   font_size?: number;
+
   font_color?: string;
   border_color?: string;
   position?: 'top' | 'middle' | 'bottom';
+  aspect_ratio?: '9:16' | '16:9';
 }
 
 export interface ApiResponse<T> {

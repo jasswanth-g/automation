@@ -35,6 +35,10 @@ export class GenerateVideoDto {
   song_id!: string;
 
   @IsOptional()
+  @IsString()
+  text?: string;
+
+  @IsOptional()
   @IsNumber()
   font_size?: number;
 
@@ -49,4 +53,8 @@ export class GenerateVideoDto {
   @IsOptional()
   @IsEnum(['top', 'middle', 'bottom'])
   position?: 'top' | 'middle' | 'bottom';
+
+  @IsOptional()
+  @IsEnum(['9:16', '16:9'])
+  aspect_ratio?: '9:16' | '16:9';
 }

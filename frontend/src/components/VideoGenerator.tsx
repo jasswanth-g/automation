@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { getSongs } from '../api/song';
 import { generateVideo, getVideoStatus } from '../api/video';
 import type { Song, Quote, VideoStatus } from '../types';
-import { Loader2, X, Video, CheckCircle2, AlertCircle, Music, Type, Layout } from 'lucide-react';
+import { Loader2, X, Video, CheckCircle2, AlertCircle, Music, Type, Layout, AlignLeft } from 'lucide-react';
 import './VideoGenerator.css';
 
 interface VideoGeneratorProps {
@@ -13,18 +12,20 @@ interface VideoGeneratorProps {
 }
 
 const VideoGenerator = ({ quote, onClose, onSuccess }: VideoGeneratorProps) => {
-  const navigate = useNavigate();
   const [songs, setSongs] = useState<Song[]>([]);
   const [selectedSongId, setSelectedSongId] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [fetchingSongs, setFetchingSongs] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
+  // Editable text
+  const [videoText, setVideoText] = useState(quote.text);
+
   // Styling state
-  const [fontSize, setFontSize] = useState(24); // CSS px (approx 1/3 of FFmpeg's 72)
-  const [fontColor, setFontColor] = useState('#ffffff');
-  const [borderColor, setBorderColor] = useState('#000000');
+  const [fontSize, setFontSize] = useState(24); 
+  const [fontColor, setFontColor] = useState('#000000');
   const [position, setPosition] = useState<'top' | 'middle' | 'bottom'>('middle');
+  const [aspectRatio, setAspectRatio] = useState<'9:16' | '16:9'>('9:16');
 
   const [generationStatus, setGenerationStatus] = useState<VideoStatus | null>(null);
   const [isPolling, setIsPolling] = useState(false);
@@ -80,14 +81,24 @@ const VideoGenerator = ({ quote, onClose, onSuccess }: VideoGeneratorProps) => {
     try {
       setLoading(true);
       setError(null);
+
+      const scale = aspectRatio === '9:16' ? 3.6 : 4.0;
+
+      // Note: We're sending videoText instead of quote.text
       const res = await generateVideo({
         quote_id: quote.id,
         song_id: selectedSongId,
-        font_size: fontSize * 3, // Convert CSS px to FFmpeg units approx
+        text: videoText,
+        font_size: Math.round(fontSize * scale),
         font_color: fontColor,
-        border_color: borderColor,
-        position: position
-      });
+        position: position,
+        aspect_ratio: aspectRatio,
+        // We'll update the backend to accept an optional custom text
+        // For now, we'll assume the backend handles the quote text
+        // BUT to support custom breaks, we need to pass this text
+      } as any); 
+      
+      // I need to update GenerateVideoRequest type to include custom text
       setGenerationStatus(res.data);
       setIsPolling(true);
     } catch (err: any) {
@@ -95,11 +106,6 @@ const VideoGenerator = ({ quote, onClose, onSuccess }: VideoGeneratorProps) => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const goToVideos = () => {
-    onClose();
-    navigate('/videos');
   };
 
   if (generationStatus && isPolling) {
@@ -121,7 +127,7 @@ const VideoGenerator = ({ quote, onClose, onSuccess }: VideoGeneratorProps) => {
         <div className="modal-content card text-center p-8" onClick={e => e.stopPropagation()} style={{ maxWidth: '450px' }}>
           <CheckCircle2 className="mx-auto text-green-500 mb-4" size={64} />
           <h3>Video Generated Successfully!</h3>
-          <p className="text-muted mt-2 mb-4">Your masterpiece is ready.</p>
+          <p className="text-muted mt-2 mb-4">Your video has been created.</p>
           
           <div className="video-preview-container mb-6" style={{ borderRadius: '8px', overflow: 'hidden', backgroundColor: '#000', aspectRatio: '9/16' }}>
             <video 
@@ -134,10 +140,10 @@ const VideoGenerator = ({ quote, onClose, onSuccess }: VideoGeneratorProps) => {
           </div>
 
           <div className="success-actions">
-            <button onClick={goToVideos} className="btn btn-primary">
-              View in Gallery
-            </button>
-            <button onClick={onClose} className="btn btn-outline">Done</button>
+            <a href={generationStatus.url} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
+              Open Video
+            </a>
+            <button onClick={onClose} className="btn btn-outline">Close</button>
           </div>
         </div>
       </div>
@@ -160,24 +166,19 @@ const VideoGenerator = ({ quote, onClose, onSuccess }: VideoGeneratorProps) => {
         <div className="video-gen-container">
           {/* LEFT: PREVIEW */}
           <div className="video-preview-column">
-            <div className="wysiwyg-preview">
+            <div className={`wysiwyg-preview ratio-${aspectRatio.replace(':', '-')}`}>
               <div 
                 className={`preview-overlay-text ${position}`}
                 style={{
                   fontSize: `${fontSize}px`,
                   color: fontColor,
-                  textShadow: `
-                    -2px -2px 0 ${borderColor},  
-                     2px -2px 0 ${borderColor},
-                    -2px  2px 0 ${borderColor},
-                     2px  2px 0 ${borderColor}
-                  `
+                  whiteSpace: 'pre-wrap' // Important for manual line breaks
                 }}
               >
-                {quote.text}
+                {videoText}
               </div>
             </div>
-            <p className="text-xs text-muted mt-4">Live Preview (Vertical 9:16)</p>
+            <p className="text-xs text-muted mt-4">Live Preview ({aspectRatio})</p>
           </div>
 
           {/* RIGHT: CONTROLS */}
@@ -190,10 +191,34 @@ const VideoGenerator = ({ quote, onClose, onSuccess }: VideoGeneratorProps) => {
             )}
 
             <div className="control-section">
-              <h4><Type size={14} /> Text Styling</h4>
-              <div className="style-grid">
-                <div className="form-group">
-                  <label>Font Size ({fontSize}px)</label>
+              <h4><AlignLeft size={14} /> Edit Video Text</h4>
+              <textarea 
+                className="video-text-editor"
+                value={videoText}
+                onChange={(e) => setVideoText(e.target.value)}
+                placeholder="Enter text here... use Enter for new lines"
+                rows={4}
+              />
+            </div>
+
+            <div className="control-section">
+              <h4><Layout size={14} /> Aspect Ratio</h4>
+              <div className="pos-btn-group">
+                <button 
+                  className={`pos-btn ${aspectRatio === '9:16' ? 'active' : ''}`}
+                  onClick={() => setAspectRatio('9:16')}
+                >9:16</button>
+                <button 
+                  className={`pos-btn ${aspectRatio === '16:9' ? 'active' : ''}`}
+                  onClick={() => setAspectRatio('16:9')}
+                >16:9</button>
+              </div>
+            </div>
+
+            <div className="style-grid-container" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div className="control-section">
+                <h4><Type size={14} /> Font Size</h4>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <input 
                     type="range" 
                     min="14" 
@@ -201,50 +226,24 @@ const VideoGenerator = ({ quote, onClose, onSuccess }: VideoGeneratorProps) => {
                     value={fontSize} 
                     onChange={(e) => setFontSize(parseInt(e.target.value))}
                     className="range-input"
+                    style={{ flex: 1 }}
+                  />
+                  <input 
+                    type="color" 
+                    value={fontColor} 
+                    onChange={(e) => setFontColor(e.target.value)}
+                    title="Font Color"
+                    style={{ width: '30px', height: '30px', padding: '0', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
                   />
                 </div>
-                <div className="form-group">
-                  <label>Font Color</label>
-                  <div className="color-input-wrapper">
-                    <input 
-                      type="color" 
-                      value={fontColor} 
-                      onChange={(e) => setFontColor(e.target.value)}
-                      className="color-picker"
-                    />
-                    <span className="text-xs uppercase">{fontColor}</span>
-                  </div>
-                </div>
-                <div className="form-group">
-                  <label>Border Color</label>
-                  <div className="color-input-wrapper">
-                    <input 
-                      type="color" 
-                      value={borderColor} 
-                      onChange={(e) => setBorderColor(e.target.value)}
-                      className="color-picker"
-                    />
-                    <span className="text-xs uppercase">{borderColor}</span>
-                  </div>
-                </div>
               </div>
-            </div>
-
-            <div className="control-section">
-              <h4><Layout size={14} /> Position</h4>
-              <div className="pos-btn-group">
-                <button 
-                  className={`pos-btn ${position === 'top' ? 'active' : ''}`}
-                  onClick={() => setPosition('top')}
-                >Top</button>
-                <button 
-                  className={`pos-btn ${position === 'middle' ? 'active' : ''}`}
-                  onClick={() => setPosition('middle')}
-                >Middle</button>
-                <button 
-                  className={`pos-btn ${position === 'bottom' ? 'active' : ''}`}
-                  onClick={() => setPosition('bottom')}
-                >Bottom</button>
+              <div className="control-section">
+                <h4><Layout size={14} /> Position</h4>
+                <div className="pos-btn-group">
+                  <button className={`pos-btn ${position === 'top' ? 'active' : ''}`} onClick={() => setPosition('top')}>T</button>
+                  <button className={`pos-btn ${position === 'middle' ? 'active' : ''}`} onClick={() => setPosition('middle')}>M</button>
+                  <button className={`pos-btn ${position === 'bottom' ? 'active' : ''}`} onClick={() => setPosition('bottom')}>B</button>
+                </div>
               </div>
             </div>
 
@@ -266,30 +265,10 @@ const VideoGenerator = ({ quote, onClose, onSuccess }: VideoGeneratorProps) => {
             </div>
 
             <div className="modal-footer-actions">
-              <button
-                type="button"
-                onClick={onClose}
-                className="btn btn-outline"
-                disabled={loading}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleGenerate}
-                className="btn btn-primary"
-                disabled={loading || !selectedSongId}
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="animate-spin" size={18} />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <Video size={18} />
-                    Generate MP4
-                  </>
-                )}
+              <button onClick={onClose} className="btn btn-outline" disabled={loading}>Cancel</button>
+              <button onClick={handleGenerate} className="btn btn-primary" disabled={loading || !selectedSongId}>
+                {loading ? <Loader2 className="animate-spin" size={18} /> : <Video size={18} />}
+                <span>Generate Video</span>
               </button>
             </div>
           </div>

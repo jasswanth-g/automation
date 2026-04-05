@@ -31,10 +31,12 @@ export class VideoController {
       body.quote_id,
       body.song_id,
       {
+        text: body.text,
         fontSize: body.font_size,
         fontColor: body.font_color,
         borderColor: body.border_color,
-        position: body.position
+        position: body.position,
+        aspectRatio: body.aspect_ratio
       }
     );
   }

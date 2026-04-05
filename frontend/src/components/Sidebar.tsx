@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Film, Music, Quote, Video } from 'lucide-react';
+import { Film, Music, Quote } from 'lucide-react';
 import './Sidebar.css';
 
 const Sidebar = () => {
@@ -24,10 +24,6 @@ const Sidebar = () => {
           <NavLink to="/quotes" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
             <Quote size={20} />
             <span>Quotes</span>
-          </NavLink>
-          <NavLink to="/videos" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
-            <Video size={20} />
-            <span>Videos</span>
           </NavLink>
         </div>
       </nav>

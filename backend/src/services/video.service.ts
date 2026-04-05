@@ -50,13 +50,14 @@ export class VideoService {
     quoteId: string,
     songId: string,
     style?: {
+      text?: string | undefined;
       fontSize?: number | undefined;
       fontColor?: string | undefined;
       borderColor?: string | undefined;
       position?: 'top' | 'middle' | 'bottom' | undefined;
+      aspectRatio?: '9:16' | '16:9' | undefined;
     }
   ): Promise<VideoMetadata> {
-    // 1. Fetch metadata
     const quote = await this.quoteRepository.findById(quoteId);
     if (!quote) throw new Error('Quote not found');
 
@@ -64,11 +65,9 @@ export class VideoService {
     if (!song) throw new Error('Song not found');
 
     let imageUrl: string | undefined = 'https://ik.imagekit.io/jasswanth/test.jpg';
-
     const audioUrl = song.url;
     const text = quote.text;
 
-    // 2. Create video record
     const videoData: Partial<VideoMetadata> = {
       status: 'pending',
       quote_id: quoteId,
@@ -78,7 +77,6 @@ export class VideoService {
     const videoRecord = await this.videoRepository.create(videoData);
     const videoId = videoRecord.id!;
 
-    // 3. Start processing in background
     this.processVideo(videoId, imageUrl, audioUrl, text, quoteId, style).catch(err => {
       console.error(colors.red(`[VideoService] Background processing failed for ${videoId}:`), err);
     });
@@ -91,9 +89,7 @@ export class VideoService {
       const video = await this.videoRepository.findById(id);
       if (!video) throw new Error('Video not found');
 
-      // 1. Delete from ImageKit if it was successfully uploaded
       if (video.imagekit_file_id) {
-        console.log(colors.yellow(`[VideoService] Deleting file from ImageKit: ${video.imagekit_file_id}`));
         try {
           await this.imagekit.deleteFile(video.imagekit_file_id);
         } catch (ikError) {
@@ -101,18 +97,31 @@ export class VideoService {
         }
       }
 
-      // 2. Update quote status if linked
       if (video.quote_id) {
         await this.quoteRepository.update(video.quote_id, { video_status: 'pending' });
       }
 
-      // 3. Delete from database
       await this.videoRepository.delete(id);
-      console.log(colors.green(`[VideoService] Successfully deleted video: ${id}`));
     } catch (error: any) {
-      console.error(colors.red(`[VideoService] Deletion failed for ${id}: ${error.message}`));
       throw new Error(`Failed to delete video: ${error.message}`);
     }
+  }
+
+  private wrapText(text: string, maxChars: number): string {
+    const words = text.split(' ');
+    let lines: string[] = [];
+    let currentLine = '';
+
+    words.forEach(word => {
+      if ((currentLine + word).length <= maxChars) {
+        currentLine += (currentLine ? ' ' : '') + word;
+      } else {
+        lines.push(currentLine);
+        currentLine = word;
+      }
+    });
+    lines.push(currentLine);
+    return lines.join('\n');
   }
 
   private async processVideo(
@@ -122,10 +131,12 @@ export class VideoService {
     text: string,
     quoteId?: string,
     style?: {
+      text?: string | undefined;
       fontSize?: number | undefined;
       fontColor?: string | undefined;
       borderColor?: string | undefined;
       position?: 'top' | 'middle' | 'bottom' | undefined;
+      aspectRatio?: '9:16' | '16:9' | undefined;
     }
   ) {
     const tmpDir = path.join(os.tmpdir(), 'video-gen', videoId);
@@ -139,16 +150,12 @@ export class VideoService {
 
     try {
       await this.videoRepository.update(videoId, { status: 'processing' });
-
-      console.log(colors.cyan(`[VideoService] Preparing assets for video ${videoId}...`));
       
       const tasks: Promise<void>[] = [this.downloadFile(audioUrl, audioPath)];
       
       if (imageUrl) {
-        console.log(colors.cyan(`[VideoService] Downloading image for video ${videoId}...`));
         tasks.push(this.downloadFile(imageUrl, imagePath));
       } else {
-        console.log(colors.cyan(`[VideoService] Using default static image for video ${videoId}...`));
         const defaultImagePath = path.join(process.cwd(), 'test.jpg');
         if (fs.existsSync(defaultImagePath)) {
           fs.copyFileSync(defaultImagePath, imagePath);
@@ -159,42 +166,49 @@ export class VideoService {
 
       await Promise.all(tasks);
 
-      // Use a common font path based on OS
-      let fontPath = 'arial.ttf'; 
+      let fontPath = 'arialbd.ttf'; 
       if (process.platform === 'win32') {
-        fontPath = 'C\\:/Windows/Fonts/arial.ttf';
+        // Use Arial Bold for better visibility and matching with browser rendering
+        fontPath = 'C\\\\:/Windows/Fonts/arialbd.ttf';
       }
 
-      // styling
-      const fontSize = style?.fontSize || 72;
-      const fontColor = style?.fontColor || 'black';
-      const borderColor = style?.borderColor || 'white';
+      const fontSize = style?.fontSize || 86;
+      const fontColor = style?.fontColor || 'white';
+      const borderColor = style?.borderColor || 'black';
       const position = style?.position || 'middle';
+      const aspectRatio = style?.aspectRatio || '9:16';
+      const customText = style?.text;
 
-      let yPos = '(h-text_h)/2'; // middle
+      // Dimensions based on ratio
+      const width = aspectRatio === '9:16' ? 1080 : 1920;
+      const height = aspectRatio === '9:16' ? 1920 : 1080;
+
+      // Use custom text if provided, otherwise wrap the default quote text
+      let finalDisplayText = '';
+      if (customText) {
+        // If it already has line breaks, use it as is (after escaping)
+        // FFmpeg drawtext needs literal \n to be passed correctly
+        finalDisplayText = customText;
+      } else {
+        const maxChars = Math.floor((width * 0.75) / (fontSize * 0.5)); 
+        finalDisplayText = this.wrapText(text, maxChars);
+      }
+
+      let yPos = '(h-text_h)/2';
       if (position === 'top') yPos = 'h/4';
       if (position === 'bottom') yPos = '3*h/4-text_h';
 
-      console.log(colors.yellow(`[VideoService] Running FFmpeg for video ${videoId}...`));
+      console.log(colors.yellow(`[VideoService] Running FFmpeg for video ${videoId} (${aspectRatio})...`));
       
       await new Promise<void>((resolve, reject) => {
         ffmpeg()
           .input(imagePath)
-          .inputOptions(['-loop 1', '-framerate 30']) // Explicitly set framerate for image input
+          .inputOptions(['-loop 1', '-framerate 30'])
           .input(audioPath)
           .complexFilter([
-            `scale=1080:1920:force_original_aspect_ratio=decrease,
-             pad=1080:1920:(ow-iw)/2:(oh-ih)/2,
-             setsar=1,
-             drawtext=fontfile='${fontPath}':
-             text='${text.replace(/'/g, "'\\\\\\''")}':
-             fontsize=${fontSize}:
-             fontcolor=${fontColor}:
-             line_spacing=25:
-             borderw=3:
-             bordercolor=${borderColor}:
-             x=(w-text_w)/2:
-             y=${yPos}`
+            // Use 'increase' + 'crop' to match 'background-size: cover'
+            // Escape single quotes and backslashes for FFmpeg
+            `scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height},drawtext=fontfile='${fontPath}':text='${finalDisplayText.replace(/\\/g, '\\\\\\\\').replace(/'/g, "'\\\\\\''").replace(/\n/g, '\n')}':fontsize=${fontSize}:fontcolor=${fontColor}:line_spacing=15:x=(w-text_w)/2:y=${yPos}`
           ])
           .outputOptions([
             '-c:v libx264',
@@ -218,10 +232,8 @@ export class VideoService {
             console.error('FFmpeg error:', err);
             reject(err);
           });
-          // Removed redundant .run() as .save() already starts the process
       });
 
-      console.log(colors.green(`[VideoService] FFmpeg finished. Uploading to ImageKit...`));
       const fileBuffer = fs.readFileSync(outputPath);
       const uploadResponse = await this.imagekit.upload({
         file: fileBuffer,
@@ -238,8 +250,6 @@ export class VideoService {
       if (quoteId) {
         await this.quoteRepository.update(quoteId, { video_status: 'created' });
       }
-
-      console.log(colors.green(`[VideoService] Video ${videoId} processing complete.`));
     } catch (error: any) {
       console.error(colors.red(`[VideoService] Error processing video ${videoId}:`), error);
       await this.videoRepository.update(videoId, {
@@ -247,14 +257,11 @@ export class VideoService {
         error: error.message,
       });
     } finally {
-      // Cleanup
       try {
         if (fs.existsSync(tmpDir)) {
           fs.rmSync(tmpDir, { recursive: true, force: true });
         }
-      } catch (e) {
-        console.warn(`[VideoService] Failed to cleanup temp dir ${tmpDir}:`, e);
-      }
+      } catch (e) {}
     }
   }
 
