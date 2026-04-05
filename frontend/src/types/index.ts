@@ -4,6 +4,7 @@ export interface Movie {
   description?: string;
   image_url: string;
   imagekit_file_id: string;
+  songs?: Song[];
   created_at: string;
   updated_at: string;
 }
@@ -83,6 +84,10 @@ export interface VideoStatus {
 export interface GenerateVideoRequest {
   quote_id: string;
   song_id: string;
+  font_size?: number;
+  font_color?: string;
+  border_color?: string;
+  position?: 'top' | 'middle' | 'bottom';
 }
 
 export interface ApiResponse<T> {

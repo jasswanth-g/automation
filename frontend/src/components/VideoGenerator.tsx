@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { getMovies, getMovie } from '../api/movie';
+import { useNavigate } from 'react-router-dom';
+import { getSongs } from '../api/song';
 import { generateVideo, getVideoStatus } from '../api/video';
-import type { Movie, Song, Quote, VideoStatus } from '../types';
-import { Loader2, X, Video, Film, Music, CheckCircle2, AlertCircle } from 'lucide-react';
+import type { Song, Quote, VideoStatus } from '../types';
+import { Loader2, X, Video, CheckCircle2, AlertCircle, Music, Type, Layout } from 'lucide-react';
 import './VideoGenerator.css';
 
 interface VideoGeneratorProps {
@@ -12,33 +13,28 @@ interface VideoGeneratorProps {
 }
 
 const VideoGenerator = ({ quote, onClose, onSuccess }: VideoGeneratorProps) => {
-  const [movies, setMovies] = useState<Movie[]>([]);
-  const [selectedMovieId, setSelectedMovieId] = useState<string>('');
-  const [movieSongs, setMovieSongs] = useState<Song[]>([]);
+  const navigate = useNavigate();
+  const [songs, setSongs] = useState<Song[]>([]);
   const [selectedSongId, setSelectedSongId] = useState<string>('');
   const [loading, setLoading] = useState(false);
-  const [fetchingMovies, setFetchingMovies] = useState(true);
-  const [fetchingSongs, setFetchingSongs] = useState(false);
+  const [fetchingSongs, setFetchingSongs] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
+  // Styling state
+  const [fontSize, setFontSize] = useState(24); // CSS px (approx 1/3 of FFmpeg's 72)
+  const [fontColor, setFontColor] = useState('#ffffff');
+  const [borderColor, setBorderColor] = useState('#000000');
+  const [position, setPosition] = useState<'top' | 'middle' | 'bottom'>('middle');
+
   const [generationStatus, setGenerationStatus] = useState<VideoStatus | null>(null);
   const [isPolling, setIsPolling] = useState(false);
 
   useEffect(() => {
-    fetchMovies();
+    fetchAllSongs();
   }, []);
 
   useEffect(() => {
-    if (selectedMovieId) {
-      fetchMovieSongs(selectedMovieId);
-    } else {
-      setMovieSongs([]);
-      setSelectedSongId('');
-    }
-  }, [selectedMovieId]);
-
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: any;
     if (isPolling && generationStatus?.id) {
       interval = setInterval(async () => {
         try {
@@ -59,52 +55,38 @@ const VideoGenerator = ({ quote, onClose, onSuccess }: VideoGeneratorProps) => {
     return () => clearInterval(interval);
   }, [isPolling, generationStatus, onSuccess]);
 
-  const fetchMovies = async () => {
-    try {
-      setFetchingMovies(true);
-      const res = await getMovies();
-      setMovies(res.data);
-    } catch (err) {
-      console.error('Failed to fetch movies');
-    } finally {
-      setFetchingMovies(false);
-    }
-  };
-
-  const fetchMovieSongs = async (id: string) => {
+  const fetchAllSongs = async () => {
     try {
       setFetchingSongs(true);
-      const res = await getMovie(id);
-      setMovieSongs(res.data.songs || []);
-      if (res.data.songs?.length > 0) {
-        setSelectedSongId(res.data.songs[0].id);
-      } else {
-        setSelectedSongId('');
+      const res = await getSongs();
+      setSongs(res.data);
+      if (res.data.length > 0) {
+        setSelectedSongId(res.data[0].id);
       }
     } catch (err) {
-      console.error('Failed to fetch movie songs');
+      console.error('Failed to fetch songs');
+      setError('Failed to load songs. Please try again.');
     } finally {
       setFetchingSongs(false);
     }
   };
 
   const handleGenerate = async () => {
-    if (!selectedMovieId || !selectedSongId) {
-      setError('Please select both a movie and a song.');
+    if (!selectedSongId) {
+      setError('Please select a song.');
       return;
     }
-
-    const movie = movies.find(m => m.id === selectedMovieId);
-    const song = movieSongs.find(s => s.id === selectedSongId);
-
-    if (!movie || !song) return;
 
     try {
       setLoading(true);
       setError(null);
       const res = await generateVideo({
         quote_id: quote.id,
-        song_id: selectedSongId
+        song_id: selectedSongId,
+        font_size: fontSize * 3, // Convert CSS px to FFmpeg units approx
+        font_color: fontColor,
+        border_color: borderColor,
+        position: position
       });
       setGenerationStatus(res.data);
       setIsPolling(true);
@@ -113,6 +95,11 @@ const VideoGenerator = ({ quote, onClose, onSuccess }: VideoGeneratorProps) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const goToVideos = () => {
+    onClose();
+    navigate('/videos');
   };
 
   if (generationStatus && isPolling) {
@@ -131,25 +118,26 @@ const VideoGenerator = ({ quote, onClose, onSuccess }: VideoGeneratorProps) => {
   if (generationStatus?.status === 'completed') {
     return (
       <div className="modal-overlay" onClick={onClose}>
-        <div className="modal-content card text-center p-8" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+        <div className="modal-content card text-center p-8" onClick={e => e.stopPropagation()} style={{ maxWidth: '450px' }}>
           <CheckCircle2 className="mx-auto text-green-500 mb-4" size={64} />
           <h3>Video Generated Successfully!</h3>
-          <p className="text-muted mt-2 mb-4">The quote has been updated to 'Video: Created'.</p>
+          <p className="text-muted mt-2 mb-4">Your masterpiece is ready.</p>
           
           <div className="video-preview-container mb-6" style={{ borderRadius: '8px', overflow: 'hidden', backgroundColor: '#000', aspectRatio: '9/16' }}>
             <video 
               src={generationStatus.url} 
               controls 
+              autoPlay
               className="w-full h-full"
               style={{ maxHeight: '400px', width: '100%', display: 'block' }}
             />
           </div>
 
-          <div className="mt-6 flex gap-4 justify-center">
-            <a href={generationStatus.url} target="_blank" rel="noopener noreferrer" className="btn btn-primary" download>
-              Download
-            </a>
-            <button onClick={onClose} className="btn btn-outline">Close</button>
+          <div className="success-actions">
+            <button onClick={goToVideos} className="btn btn-primary">
+              View in Gallery
+            </button>
+            <button onClick={onClose} className="btn btn-outline">Done</button>
           </div>
         </div>
       </div>
@@ -158,99 +146,152 @@ const VideoGenerator = ({ quote, onClose, onSuccess }: VideoGeneratorProps) => {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content card" onClick={e => e.stopPropagation()}>
+      <div className="modal-content card video-gen-modal" onClick={e => e.stopPropagation()}>
         <header className="modal-header">
           <div className="title-with-icon">
             <Video size={20} className="text-primary" />
-            <h3>Generate Video for Quote</h3>
+            <h3>WYSIWYG Video Generator</h3>
           </div>
           <button onClick={onClose} className="close-btn">
             <X size={20} />
           </button>
         </header>
 
-        <div className="video-gen-body">
-          <div className="quote-preview mb-6 p-4 bg-gray-50 rounded-lg italic">
-            "{quote.text}"
+        <div className="video-gen-container">
+          {/* LEFT: PREVIEW */}
+          <div className="video-preview-column">
+            <div className="wysiwyg-preview">
+              <div 
+                className={`preview-overlay-text ${position}`}
+                style={{
+                  fontSize: `${fontSize}px`,
+                  color: fontColor,
+                  textShadow: `
+                    -2px -2px 0 ${borderColor},  
+                     2px -2px 0 ${borderColor},
+                    -2px  2px 0 ${borderColor},
+                     2px  2px 0 ${borderColor}
+                  `
+                }}
+              >
+                {quote.text}
+              </div>
+            </div>
+            <p className="text-xs text-muted mt-4">Live Preview (Vertical 9:16)</p>
           </div>
 
-          {error && (
-            <div className="form-error mb-4 flex items-center gap-2">
-              <AlertCircle size={18} />
-              <span>{error}</span>
-            </div>
-          )}
-
-          {generationStatus?.status === 'failed' && (
-            <div className="form-error mb-4">
-              <strong>Generation Failed:</strong> {generationStatus.error}
-            </div>
-          )}
-
-          <div className="form-group">
-            <label>Select Background Image (from Movie)</label>
-            <div className="select-wrapper">
-              <select 
-                value={selectedMovieId} 
-                onChange={(e) => setSelectedMovieId(e.target.value)}
-                disabled={fetchingMovies || loading}
-              >
-                <option value="">-- Choose a Movie --</option>
-                {movies.map(movie => (
-                  <option key={movie.id} value={movie.id}>{movie.title}</option>
-                ))}
-              </select>
-              {fetchingMovies && <Loader2 className="animate-spin select-loader" size={16} />}
-            </div>
-          </div>
-
-          <div className="form-group mt-4">
-            <label>Select Background Music (from Song)</label>
-            <div className="select-wrapper">
-              <select 
-                value={selectedSongId} 
-                onChange={(e) => setSelectedSongId(e.target.value)}
-                disabled={!selectedMovieId || fetchingSongs || loading}
-              >
-                <option value="">-- Choose a Song --</option>
-                {movieSongs.map(song => (
-                  <option key={song.id} value={song.id}>{song.name}</option>
-                ))}
-              </select>
-              {fetchingSongs && <Loader2 className="animate-spin select-loader" size={16} />}
-            </div>
-            {!selectedMovieId && <p className="text-xs text-muted mt-1">Select a movie first to see its songs.</p>}
-            {selectedMovieId && movieSongs.length === 0 && !fetchingSongs && (
-              <p className="text-xs text-danger mt-1">This movie has no songs. Please select another movie.</p>
+          {/* RIGHT: CONTROLS */}
+          <div className="video-controls-column">
+            {error && (
+              <div className="form-error flex items-center gap-2">
+                <AlertCircle size={18} />
+                <span>{error}</span>
+              </div>
             )}
-          </div>
 
-          <div className="modal-actions mt-8">
-            <button
-              type="button"
-              onClick={onClose}
-              className="btn btn-outline"
-              disabled={loading}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleGenerate}
-              className="btn btn-primary"
-              disabled={loading || !selectedMovieId || !selectedSongId}
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="animate-spin" size={18} />
-                  Starting...
-                </>
-              ) : (
-                <>
-                  <Video size={18} />
-                  Generate Video
-                </>
-              )}
-            </button>
+            <div className="control-section">
+              <h4><Type size={14} /> Text Styling</h4>
+              <div className="style-grid">
+                <div className="form-group">
+                  <label>Font Size ({fontSize}px)</label>
+                  <input 
+                    type="range" 
+                    min="14" 
+                    max="48" 
+                    value={fontSize} 
+                    onChange={(e) => setFontSize(parseInt(e.target.value))}
+                    className="range-input"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Font Color</label>
+                  <div className="color-input-wrapper">
+                    <input 
+                      type="color" 
+                      value={fontColor} 
+                      onChange={(e) => setFontColor(e.target.value)}
+                      className="color-picker"
+                    />
+                    <span className="text-xs uppercase">{fontColor}</span>
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label>Border Color</label>
+                  <div className="color-input-wrapper">
+                    <input 
+                      type="color" 
+                      value={borderColor} 
+                      onChange={(e) => setBorderColor(e.target.value)}
+                      className="color-picker"
+                    />
+                    <span className="text-xs uppercase">{borderColor}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="control-section">
+              <h4><Layout size={14} /> Position</h4>
+              <div className="pos-btn-group">
+                <button 
+                  className={`pos-btn ${position === 'top' ? 'active' : ''}`}
+                  onClick={() => setPosition('top')}
+                >Top</button>
+                <button 
+                  className={`pos-btn ${position === 'middle' ? 'active' : ''}`}
+                  onClick={() => setPosition('middle')}
+                >Middle</button>
+                <button 
+                  className={`pos-btn ${position === 'bottom' ? 'active' : ''}`}
+                  onClick={() => setPosition('bottom')}
+                >Bottom</button>
+              </div>
+            </div>
+
+            <div className="control-section">
+              <h4><Music size={14} /> Background Music</h4>
+              <div className="select-wrapper">
+                <select 
+                  value={selectedSongId} 
+                  onChange={(e) => setSelectedSongId(e.target.value)}
+                  disabled={fetchingSongs || loading}
+                >
+                  <option value="">-- Select Music --</option>
+                  {songs.map(song => (
+                    <option key={song.id} value={song.id}>{song.name}</option>
+                  ))}
+                </select>
+                {fetchingSongs && <Loader2 className="animate-spin select-loader" size={16} />}
+              </div>
+            </div>
+
+            <div className="modal-footer-actions">
+              <button
+                type="button"
+                onClick={onClose}
+                className="btn btn-outline"
+                disabled={loading}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleGenerate}
+                className="btn btn-primary"
+                disabled={loading || !selectedSongId}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="animate-spin" size={18} />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <Video size={18} />
+                    Generate MP4
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>

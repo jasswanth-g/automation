@@ -48,7 +48,13 @@ export class VideoService {
 
   async generateVideo(
     quoteId: string,
-    songId: string
+    songId: string,
+    style?: {
+      fontSize?: number | undefined;
+      fontColor?: string | undefined;
+      borderColor?: string | undefined;
+      position?: 'top' | 'middle' | 'bottom' | undefined;
+    }
   ): Promise<VideoMetadata> {
     // 1. Fetch metadata
     const quote = await this.quoteRepository.findById(quoteId);
@@ -73,7 +79,7 @@ export class VideoService {
     const videoId = videoRecord.id!;
 
     // 3. Start processing in background
-    this.processVideo(videoId, imageUrl, audioUrl, text, quoteId).catch(err => {
+    this.processVideo(videoId, imageUrl, audioUrl, text, quoteId, style).catch(err => {
       console.error(colors.red(`[VideoService] Background processing failed for ${videoId}:`), err);
     });
 
@@ -114,7 +120,13 @@ export class VideoService {
     imageUrl: string | undefined,
     audioUrl: string,
     text: string,
-    quoteId?: string
+    quoteId?: string,
+    style?: {
+      fontSize?: number | undefined;
+      fontColor?: string | undefined;
+      borderColor?: string | undefined;
+      position?: 'top' | 'middle' | 'bottom' | undefined;
+    }
   ) {
     const tmpDir = path.join(os.tmpdir(), 'video-gen', videoId);
     if (!fs.existsSync(tmpDir)) {
@@ -153,6 +165,16 @@ export class VideoService {
         fontPath = 'C\\:/Windows/Fonts/arial.ttf';
       }
 
+      // styling
+      const fontSize = style?.fontSize || 72;
+      const fontColor = style?.fontColor || 'black';
+      const borderColor = style?.borderColor || 'white';
+      const position = style?.position || 'middle';
+
+      let yPos = '(h-text_h)/2'; // middle
+      if (position === 'top') yPos = 'h/4';
+      if (position === 'bottom') yPos = '3*h/4-text_h';
+
       console.log(colors.yellow(`[VideoService] Running FFmpeg for video ${videoId}...`));
       
       await new Promise<void>((resolve, reject) => {
@@ -166,13 +188,13 @@ export class VideoService {
              setsar=1,
              drawtext=fontfile='${fontPath}':
              text='${text.replace(/'/g, "'\\\\\\''")}':
-             fontsize=72:
-             fontcolor=black:
+             fontsize=${fontSize}:
+             fontcolor=${fontColor}:
              line_spacing=25:
              borderw=3:
-             bordercolor=white:
+             bordercolor=${borderColor}:
              x=(w-text_w)/2:
-             y=(h-text_h)/2`
+             y=${yPos}`
           ])
           .outputOptions([
             '-c:v libx264',

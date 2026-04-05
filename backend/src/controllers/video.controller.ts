@@ -29,7 +29,13 @@ export class VideoController {
   async generateVideo(@Body() body: GenerateVideoDto) {
     return await videoService.generateVideo(
       body.quote_id,
-      body.song_id
+      body.song_id,
+      {
+        fontSize: body.font_size,
+        fontColor: body.font_color,
+        borderColor: body.border_color,
+        position: body.position
+      }
     );
   }
 
