@@ -168,13 +168,34 @@ export class VideoService {
 
       let fontPath = 'arialbd.ttf'; 
       if (process.platform === 'win32') {
-        // Use Arial Bold for better visibility and matching with browser rendering
         fontPath = 'C\\\\:/Windows/Fonts/arialbd.ttf';
+      } else {
+        // Common paths on Linux (Render/Ubuntu)
+        const possibleFonts = [
+          '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
+          '/usr/share/fonts/TTF/DejaVuSans-Bold.ttf',
+          '/usr/share/fonts/truetype/freefont/FreeSansBold.ttf',
+          'arialbd.ttf'
+        ];
+        for (const f of possibleFonts) {
+          if (fs.existsSync(f)) {
+            fontPath = f;
+            break;
+          }
+        }
       }
 
       const fontSize = style?.fontSize || 86;
-      const fontColor = style?.fontColor || 'white';
-      const borderColor = style?.borderColor || 'black';
+      let fontColor = style?.fontColor || 'white';
+      if (fontColor.startsWith('#')) {
+        fontColor = fontColor.replace('#', '0x');
+      }
+      
+      let borderColor = style?.borderColor || 'black';
+      if (borderColor.startsWith('#')) {
+        borderColor = borderColor.replace('#', '0x');
+      }
+
       const position = style?.position || 'middle';
       const aspectRatio = style?.aspectRatio || '9:16';
       const customText = style?.text;
@@ -184,15 +205,17 @@ export class VideoService {
       const height = aspectRatio === '9:16' ? 1920 : 1080;
 
       // Use custom text if provided, otherwise wrap the default quote text
-      let finalDisplayText = '';
-      if (customText) {
-        // If it already has line breaks, use it as is (after escaping)
-        // FFmpeg drawtext needs literal \n to be passed correctly
-        finalDisplayText = customText;
-      } else {
+      let finalDisplayText = customText || text;
+      if (!customText) {
         const maxChars = Math.floor((width * 0.75) / (fontSize * 0.5)); 
         finalDisplayText = this.wrapText(text, maxChars);
       }
+
+      // Escape text for FFmpeg drawtext filter
+      const escapedText = finalDisplayText
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "'\\''")
+        .replace(/\n/g, '\\n');
 
       let yPos = '(h-text_h)/2';
       if (position === 'top') yPos = 'h/4';
@@ -207,8 +230,7 @@ export class VideoService {
           .input(audioPath)
           .complexFilter([
             // Use 'increase' + 'crop' to match 'background-size: cover'
-            // Escape single quotes and backslashes for FFmpeg
-            `scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height},drawtext=fontfile='${fontPath}':text='${finalDisplayText.replace(/\\/g, '\\\\\\\\').replace(/'/g, "'\\\\\\''").replace(/\n/g, '\n')}':fontsize=${fontSize}:fontcolor=${fontColor}:line_spacing=15:x=(w-text_w)/2:y=${yPos}`
+            `scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height},drawtext=fontfile='${fontPath}':text='${escapedText}':fontsize=${fontSize}:fontcolor=${fontColor}:borderw=2:bordercolor=${borderColor}:line_spacing=15:x=(w-text_w)/2:y=${yPos}`
           ])
           .outputOptions([
             '-c:v libx264',
