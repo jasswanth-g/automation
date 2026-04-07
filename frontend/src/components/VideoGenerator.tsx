@@ -1,4 +1,4 @@
-import { AlertCircle, AlignLeft, CheckCircle2, Layout, Loader2, Music, Type, Video, X } from 'lucide-react';
+import { AlertCircle, AlignCenter, AlignLeft, AlignRight, CheckCircle2, Layout, Loader2, Music, Type, Video, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { getSongs } from '../api/song';
 import { generateVideo, getVideoStatus } from '../api/video';
@@ -24,6 +24,7 @@ const VideoGenerator = ({ quote, onClose, onSuccess }: VideoGeneratorProps) => {
   const [fontColor, setFontColor] = useState('#000000');
   const [borderColor, setBorderColor] = useState('transparent');
   const [position, setPosition] = useState<'top' | 'middle' | 'bottom'>('middle');
+  const [textAlign, setTextAlign] = useState<'left' | 'center' | 'right'>('center');
   const [aspectRatio, setAspectRatio] = useState<'9:16' | '16:9'>('9:16');
   const [videoText, setVideoText] = useState(quote.text);
 
@@ -97,7 +98,6 @@ const VideoGenerator = ({ quote, onClose, onSuccess }: VideoGeneratorProps) => {
         lines: videoText.split('\n').length
       });
 
-      // Note: We're sending videoText instead of quote.text
       const res = await generateVideo({
         quote_id: quote.id,
         song_id: selectedSongId,
@@ -106,13 +106,10 @@ const VideoGenerator = ({ quote, onClose, onSuccess }: VideoGeneratorProps) => {
         font_color: fontColor,
         border_color: borderColor,
         position: position,
+        text_align: textAlign,
         aspect_ratio: aspectRatio,
-        // We'll update the backend to accept an optional custom text
-        // For now, we'll assume the backend handles the quote text
-        // BUT to support custom breaks, we need to pass this text
-      } as any); 
-      
-      // I need to update GenerateVideoRequest type to include custom text
+      }); 
+
       setGenerationStatus(res.data);
       setIsPolling(true);
     } catch (err: any) {
@@ -186,6 +183,7 @@ const VideoGenerator = ({ quote, onClose, onSuccess }: VideoGeneratorProps) => {
                 style={{
                   fontSize: `${fontSize}px`,
                   color: fontColor,
+                  textAlign: textAlign,
                   textShadow: borderColor === 'transparent' ? 'none' : `-1px -1px 0 ${borderColor}, 1px -1px 0 ${borderColor}, -1px 1px 0 ${borderColor}, 1px 1px 0 ${borderColor}`,
                   whiteSpace: 'pre-wrap' // Important for manual line breaks
                 }}
@@ -279,11 +277,18 @@ const VideoGenerator = ({ quote, onClose, onSuccess }: VideoGeneratorProps) => {
                 </div>
               </div>
               <div className="control-section">
-                <h4><Layout size={14} /> Position</h4>
-                <div className="pos-btn-group">
-                  <button className={`pos-btn ${position === 'top' ? 'active' : ''}`} onClick={() => setPosition('top')}>T</button>
-                  <button className={`pos-btn ${position === 'middle' ? 'active' : ''}`} onClick={() => setPosition('middle')}>M</button>
-                  <button className={`pos-btn ${position === 'bottom' ? 'active' : ''}`} onClick={() => setPosition('bottom')}>B</button>
+                <h4><Layout size={14} /> Position & Align</h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <div className="pos-btn-group">
+                    <button className={`pos-btn ${position === 'top' ? 'active' : ''}`} onClick={() => setPosition('top')} title="Top">T</button>
+                    <button className={`pos-btn ${position === 'middle' ? 'active' : ''}`} onClick={() => setPosition('middle')} title="Middle">M</button>
+                    <button className={`pos-btn ${position === 'bottom' ? 'active' : ''}`} onClick={() => setPosition('bottom')} title="Bottom">B</button>
+                  </div>
+                  <div className="pos-btn-group">
+                    <button className={`pos-btn ${textAlign === 'left' ? 'active' : ''}`} onClick={() => setTextAlign('left')} title="Align Left"><AlignLeft size={14} /></button>
+                    <button className={`pos-btn ${textAlign === 'center' ? 'active' : ''}`} onClick={() => setTextAlign('center')} title="Align Center"><AlignCenter size={14} /></button>
+                    <button className={`pos-btn ${textAlign === 'right' ? 'active' : ''}`} onClick={() => setTextAlign('right')} title="Align Right"><AlignRight size={14} /></button>
+                  </div>
                 </div>
               </div>
             </div>

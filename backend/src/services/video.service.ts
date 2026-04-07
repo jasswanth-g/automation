@@ -57,6 +57,7 @@ export class VideoService {
       fontColor?: string | undefined;
       borderColor?: string | undefined;
       position?: 'top' | 'middle' | 'bottom' | undefined;
+      textAlign?: 'left' | 'center' | 'right' | undefined;
       aspectRatio?: '9:16' | '16:9' | undefined;
     }
   ): Promise<VideoMetadata> {
@@ -183,6 +184,7 @@ export class VideoService {
       fontColor?: string | undefined;
       borderColor?: string | undefined;
       position?: 'top' | 'middle' | 'bottom' | undefined;
+      textAlign?: 'left' | 'center' | 'right' | undefined;
       aspectRatio?: '9:16' | '16:9' | undefined;
     }
   ) {
@@ -257,6 +259,7 @@ export class VideoService {
       }
 
       const position = style?.position || 'middle';
+      const textAlign = style?.textAlign || 'center';
       const aspectRatio = style?.aspectRatio || '9:16';
       const customText = style?.text;
 
@@ -284,10 +287,17 @@ export class VideoService {
       if (position === 'top') yPos = 'h/4-text_h/2';
       if (position === 'bottom') yPos = '3*h/4-text_h/2';
 
+      // Match frontend horizontal alignment
+      let xPos = 'w*0.05';
+      if (textAlign === 'center') xPos = '(w-text_w)/2';
+      if (textAlign === 'right') xPos = 'w-text_w-w*0.05';
+
       console.log(colors.yellow(`[VideoService] Starting FFmpeg for video ${videoId} (${aspectRatio})...`));
       
       const lineSpacing = Math.round(fontSize * 0.2);
-      const filterComplex = `[0:v]scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height},drawtext=fontfile='${fontPath}':textfile='${escapedTextFilePath}':fontsize=${fontSize}:fontcolor='${fontColor}':borderw=${borderWeight}:bordercolor='${borderColor}':x=w*0.05:y=${yPos}:line_spacing=${lineSpacing}[v];[1:a]anull[a]`;
+      // Use text_align if available (C, L, R)
+      const textAlignParam = textAlign.charAt(0).toUpperCase();
+      const filterComplex = `[0:v]scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height},drawtext=fontfile='${fontPath}':textfile='${escapedTextFilePath}':fontsize=${fontSize}:fontcolor='${fontColor}':borderw=${borderWeight}:bordercolor='${borderColor}':x=${xPos}:y=${yPos}:line_spacing=${lineSpacing}:text_align=${textAlignParam}[v];[1:a]anull[a]`;
 
       await new Promise<void>((resolve, reject) => {
         const command = ffmpeg()

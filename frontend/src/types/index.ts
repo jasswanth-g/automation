@@ -90,6 +90,7 @@ export interface GenerateVideoRequest {
   font_color?: string;
   border_color?: string;
   position?: 'top' | 'middle' | 'bottom';
+  text_align?: 'left' | 'center' | 'right';
   aspect_ratio?: '9:16' | '16:9';
 }
 

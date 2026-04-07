@@ -36,6 +36,7 @@ export class VideoController {
         fontColor: body.font_color,
         borderColor: body.border_color,
         position: body.position,
+        textAlign: body.text_align,
         aspectRatio: body.aspect_ratio
       }
     );
