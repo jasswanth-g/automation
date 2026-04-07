@@ -268,8 +268,9 @@ export class VideoService {
       let finalDisplayText = customText || text;
       
       // Always apply wrapping to ensure it fits the video width, even for custom text
-      // 0.45 factor is more accurate for Arial regular character width
-      const maxChars = Math.floor((width * 0.9) / (fontSize * 0.45)); 
+      // 0.44 factor is a better balance for Arial regular character width
+      // 0.9 factor provides a safe margin that closely matches the preview
+      const maxChars = Math.floor((width * 0.9) / (fontSize * 0.44)); 
       finalDisplayText = this.wrapText(finalDisplayText, maxChars);
 
       // Write text to a file to handle newlines and special characters correctly in FFmpeg
@@ -285,7 +286,8 @@ export class VideoService {
 
       console.log(colors.yellow(`[VideoService] Starting FFmpeg for video ${videoId} (${aspectRatio})...`));
       
-      const filterComplex = `[0:v]scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height},drawtext=fontfile='${fontPath}':textfile='${escapedTextFilePath}':fontsize=${fontSize}:fontcolor='${fontColor}':borderw=${borderWeight}:bordercolor='${borderColor}':x=(w-text_w)/2:y=${yPos}:line_spacing=5[v];[1:a]anull[a]`;
+      const lineSpacing = Math.round(fontSize * 0.2);
+      const filterComplex = `[0:v]scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height},drawtext=fontfile='${fontPath}':textfile='${escapedTextFilePath}':fontsize=${fontSize}:fontcolor='${fontColor}':borderw=${borderWeight}:bordercolor='${borderColor}':x=(w-text_w)/2:y=${yPos}:line_spacing=${lineSpacing}[v];[1:a]anull[a]`;
 
       await new Promise<void>((resolve, reject) => {
         const command = ffmpeg()

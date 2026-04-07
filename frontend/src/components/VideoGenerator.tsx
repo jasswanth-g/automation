@@ -1,6 +1,5 @@
 import { AlertCircle, AlignLeft, CheckCircle2, Layout, Loader2, Music, Type, Video, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { getSongs } from '../api/song';
 import { generateVideo, getVideoStatus } from '../api/video';
 import type { Quote, Song, VideoStatus } from '../types';
@@ -19,8 +18,6 @@ const VideoGenerator = ({ quote, onClose, onSuccess }: VideoGeneratorProps) => {
   const [fetchingSongs, setFetchingSongs] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Editable text
-  const [videoText, setVideoText] = useState(quote.text);
 
   // Styling state
   const [fontSize, setFontSize] = useState(24); 
