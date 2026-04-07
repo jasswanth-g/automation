@@ -42,6 +42,9 @@ const app = express();
 // Apply CORS before other middlewares
 app.use(cors());
 
+// Serve static files from 'public' folder
+app.use(express.static('public'));
+
 // Increase payload limit for Base64 songs
 app.use(express.json({ limit: '100mb' }));
 app.use(express.urlencoded({ limit: '100mb', extended: true }));
