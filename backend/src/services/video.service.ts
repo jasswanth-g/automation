@@ -287,7 +287,7 @@ export class VideoService {
       console.log(colors.yellow(`[VideoService] Starting FFmpeg for video ${videoId} (${aspectRatio})...`));
       
       const lineSpacing = Math.round(fontSize * 0.2);
-      const filterComplex = `[0:v]scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height},drawtext=fontfile='${fontPath}':textfile='${escapedTextFilePath}':fontsize=${fontSize}:fontcolor='${fontColor}':borderw=${borderWeight}:bordercolor='${borderColor}':x=(w-text_w)/2:y=${yPos}:line_spacing=${lineSpacing}[v];[1:a]anull[a]`;
+      const filterComplex = `[0:v]scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height},drawtext=fontfile='${fontPath}':textfile='${escapedTextFilePath}':fontsize=${fontSize}:fontcolor='${fontColor}':borderw=${borderWeight}:bordercolor='${borderColor}':x=w*0.05:y=${yPos}:line_spacing=${lineSpacing}[v];[1:a]anull[a]`;
 
       await new Promise<void>((resolve, reject) => {
         const command = ffmpeg()
