@@ -59,6 +59,8 @@ export class VideoService {
       position?: 'top' | 'middle' | 'bottom' | undefined;
       textAlign?: 'left' | 'center' | 'right' | undefined;
       aspectRatio?: '9:16' | '16:9' | undefined;
+      audioStartTime?: number | undefined;
+      audioEndTime?: number | undefined;
     }
   ): Promise<VideoMetadata> {
     const quote = await this.quoteRepository.findById(quoteId);
@@ -186,6 +188,8 @@ export class VideoService {
       position?: 'top' | 'middle' | 'bottom' | undefined;
       textAlign?: 'left' | 'center' | 'right' | undefined;
       aspectRatio?: '9:16' | '16:9' | undefined;
+      audioStartTime?: number | undefined;
+      audioEndTime?: number | undefined;
     }
   ) {
     const tmpDir = path.join(os.tmpdir(), 'video-gen', videoId);
@@ -219,17 +223,17 @@ export class VideoService {
       const duration = await this.getAudioDuration(audioPath);
       console.log(colors.cyan(`[VideoService] Detected audio duration: ${duration}s`));
 
-      let fontPath = 'arial.ttf'; 
+      let fontPath = 'arialbi.ttf'; 
       if (process.platform === 'win32') {
         // FFmpeg on Windows: use forward slashes and escape the colon
-        fontPath = 'C:/Windows/Fonts/arial.ttf'.replace(/:/g, '\\:');
+        fontPath = 'C:/Windows/Fonts/arialbi.ttf'.replace(/:/g, '\\:');
       } else {
         // Common paths on Linux (Render/Ubuntu)
         const possibleFonts = [
-          '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
-          '/usr/share/fonts/TTF/DejaVuSans.ttf',
-          '/usr/share/fonts/truetype/freefont/FreeSans.ttf',
-          'arial.ttf'
+          '/usr/share/fonts/truetype/dejavu/DejaVuSans-BoldItalic.ttf',
+          '/usr/share/fonts/truetype/liberation/LiberationSans-BoldItalic.ttf',
+          '/usr/share/fonts/truetype/freefont/FreeSansBoldItalic.ttf',
+          'arialbi.ttf'
         ];
         for (const f of possibleFonts) {
           if (fs.existsSync(f)) {
@@ -247,7 +251,7 @@ export class VideoService {
       }
       
       let borderColor = style?.borderColor || 'black';
-      const borderWeight = (borderColor === 'transparent' || !borderColor) ? 0 : 1;
+      const borderWeight = (borderColor === 'transparent' || !borderColor) ? 0 : 2;
       
       // If transparent, use the same color as text as a safe fallback for FFmpeg
       if (borderColor === 'transparent') {
@@ -262,10 +266,21 @@ export class VideoService {
       const textAlign = style?.textAlign || 'center';
       const aspectRatio = style?.aspectRatio || '9:16';
       const customText = style?.text;
+      const audioStartTime = style?.audioStartTime || 0;
+      const audioEndTime = style?.audioEndTime;
 
       // Use 720p base for significantly faster processing
       const width = aspectRatio === '9:16' ? 720 : 1280;
       const height = aspectRatio === '9:16' ? 1280 : 720;
+
+      // Get audio duration to prevent infinite loops
+      const totalAudioDuration = await this.getAudioDuration(audioPath);
+      console.log(colors.cyan(`[VideoService] Detected total audio duration: ${totalAudioDuration}s`));
+
+      // Calculate final duration
+      const requestedDuration = audioEndTime ? (audioEndTime - audioStartTime) : 30;
+      const finalDuration = Math.min(requestedDuration, totalAudioDuration - audioStartTime);
+      console.log(colors.cyan(`[VideoService] Final video duration: ${finalDuration}s (Start: ${audioStartTime}s)`));
 
       // Use custom text if provided, otherwise wrap the default quote text
       let finalDisplayText = customText || text;
@@ -294,7 +309,7 @@ export class VideoService {
 
       console.log(colors.yellow(`[VideoService] Starting FFmpeg for video ${videoId} (${aspectRatio})...`));
       
-      const lineSpacing = Math.round(fontSize * 0.2);
+      const lineSpacing = Math.round(fontSize * 0.6);
       // Use text_align if available (C, L, R)
       const textAlignParam = textAlign.charAt(0).toUpperCase();
       const filterComplex = `[0:v]scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height},drawtext=fontfile='${fontPath}':textfile='${escapedTextFilePath}':fontsize=${fontSize}:fontcolor='${fontColor}':borderw=${borderWeight}:bordercolor='${borderColor}':x=${xPos}:y=${yPos}:line_spacing=${lineSpacing}:text_align=${textAlignParam}[v];[1:a]anull[a]`;
@@ -304,6 +319,7 @@ export class VideoService {
           .input(imagePath)
           .inputOptions(['-loop 1', '-framerate 30'])
           .input(audioPath)
+          .inputOptions([`-ss ${audioStartTime}`])
           .complexFilter(filterComplex)
           .outputOptions([
             '-map [v]',
@@ -319,7 +335,7 @@ export class VideoService {
             '-b:a 128k',
             '-ar 48000',
             '-ac 2',
-            `-t ${duration + 0.1}`, // Explicit limit
+            `-t ${finalDuration + 0.1}`, // Explicit limit
             '-movflags +faststart',
           ])
           .save(outputPath)
@@ -328,7 +344,7 @@ export class VideoService {
           })
           .on('progress', (progress) => {
             if (progress.frames) {
-              const totalFrames = Math.floor(duration * 30);
+              const totalFrames = Math.floor(finalDuration * 30);
               const pct = Math.min(100, Math.round((progress.frames / totalFrames) * 100));
               console.log(colors.gray(`[VideoService] Processing: ${pct}% done`));
             }

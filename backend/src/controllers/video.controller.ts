@@ -37,7 +37,9 @@ export class VideoController {
         borderColor: body.border_color,
         position: body.position,
         textAlign: body.text_align,
-        aspectRatio: body.aspect_ratio
+        aspectRatio: body.aspect_ratio,
+        audioStartTime: body.audio_start_time,
+        audioEndTime: body.audio_end_time
       }
     );
   }

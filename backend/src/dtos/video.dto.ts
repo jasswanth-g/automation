@@ -61,4 +61,12 @@ export class GenerateVideoDto {
   @IsOptional()
   @IsEnum(['9:16', '16:9'])
   aspect_ratio?: '9:16' | '16:9';
+
+  @IsOptional()
+  @IsNumber()
+  audio_start_time?: number;
+
+  @IsOptional()
+  @IsNumber()
+  audio_end_time?: number;
 }
