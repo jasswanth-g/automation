@@ -39,7 +39,9 @@ export class VideoController {
         textAlign: body.text_align,
         aspectRatio: body.aspect_ratio,
         audioStartTime: body.audio_start_time,
-        audioEndTime: body.audio_end_time
+        audioEndTime: body.audio_end_time,
+        lineHeight: body.line_height,
+        textPadding: body.text_padding
       }
     );
   }

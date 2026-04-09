@@ -94,6 +94,8 @@ export interface GenerateVideoRequest {
   aspect_ratio?: '9:16' | '16:9';
   audio_start_time?: number;
   audio_end_time?: number;
+  line_height?: number;
+  text_padding?: number;
 }
 
 export interface ApiResponse<T> {

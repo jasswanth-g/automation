@@ -61,6 +61,8 @@ export class VideoService {
       aspectRatio?: '9:16' | '16:9' | undefined;
       audioStartTime?: number | undefined;
       audioEndTime?: number | undefined;
+      lineHeight?: number | undefined;
+      textPadding?: number | undefined;
     }
   ): Promise<VideoMetadata> {
     const quote = await this.quoteRepository.findById(quoteId);
@@ -190,6 +192,8 @@ export class VideoService {
       aspectRatio?: '9:16' | '16:9' | undefined;
       audioStartTime?: number | undefined;
       audioEndTime?: number | undefined;
+      lineHeight?: number | undefined;
+      textPadding?: number | undefined;
     }
   ) {
     const tmpDir = path.join(os.tmpdir(), 'video-gen', videoId);
@@ -268,10 +272,18 @@ export class VideoService {
       const customText = style?.text;
       const audioStartTime = style?.audioStartTime || 0;
       const audioEndTime = style?.audioEndTime;
+      const lineHeight = style?.lineHeight || 1.3;
+      const textPadding = style?.textPadding || 20;
 
       // Use 720p base for significantly faster processing
       const width = aspectRatio === '9:16' ? 720 : 1280;
       const height = aspectRatio === '9:16' ? 1280 : 720;
+
+      // Scale padding from preview to video
+      // 9:16 -> 720 / 300 = 2.4
+      // 16:9 -> 1280 / 480 = 2.666...
+      const widthScale = aspectRatio === '9:16' ? 2.4 : 2.6666666667;
+      const scaledPadding = Math.round(textPadding * widthScale);
 
       // Get audio duration to prevent infinite loops
       const totalAudioDuration = await this.getAudioDuration(audioPath);
@@ -286,9 +298,8 @@ export class VideoService {
       let finalDisplayText = customText || text;
       
       // Always apply wrapping to ensure it fits the video width, even for custom text
-      // 0.44 factor is a better balance for Arial regular character width
-      // 0.9 factor provides a safe margin that closely matches the preview
-      const maxChars = Math.floor((width * 0.9) / (fontSize * 0.44)); 
+      // 0.5 factor is more accurate for Arial Bold Italic to prevent right-side crowding
+      const maxChars = Math.floor((width - (scaledPadding * 2)) / (fontSize * 0.5)); 
       finalDisplayText = this.wrapText(finalDisplayText, maxChars);
 
       // Write text to a file to handle newlines and special characters correctly in FFmpeg
@@ -299,20 +310,20 @@ export class VideoService {
 
       // Match frontend positions precisely
       let yPos = '(h-text_h)/2';
-      if (position === 'top') yPos = 'h/4-text_h/2';
-      if (position === 'bottom') yPos = '3*h/4-text_h/2';
+      if (position === 'top') yPos = scaledPadding.toString();
+      if (position === 'bottom') yPos = `h-text_h-${scaledPadding}`;
 
       // Match frontend horizontal alignment
-      let xPos = 'w*0.05';
+      let xPos = scaledPadding.toString();
       if (textAlign === 'center') xPos = '(w-text_w)/2';
-      if (textAlign === 'right') xPos = 'w-text_w-w*0.05';
+      if (textAlign === 'right') xPos = `w-text_w-${scaledPadding}`;
 
       console.log(colors.yellow(`[VideoService] Starting FFmpeg for video ${videoId} (${aspectRatio})...`));
-      
-      const lineSpacing = Math.round(fontSize * 0.6);
-      // Use text_align if available (C, L, R)
-      const textAlignParam = textAlign.charAt(0).toUpperCase();
-      const filterComplex = `[0:v]scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height},drawtext=fontfile='${fontPath}':textfile='${escapedTextFilePath}':fontsize=${fontSize}:fontcolor='${fontColor}':borderw=${borderWeight}:bordercolor='${borderColor}':x=${xPos}:y=${yPos}:line_spacing=${lineSpacing}:text_align=${textAlignParam}[v];[1:a]anull[a]`;
+
+      const lineSpacing = Math.round(fontSize * (lineHeight - 1));
+      // Use full text_align if available (center, left, right)
+      const textAlignParam = textAlign;
+      const filterComplex = `[0:v]scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height},drawtext=fontfile='${fontPath}':textfile='${escapedTextFilePath}':fontsize=${fontSize}:fontcolor='${fontColor}':borderw=${borderWeight}:bordercolor='${borderColor}':x=${xPos}:y=${yPos}:line_spacing=${lineSpacing}:text_align=${textAlignParam}:fix_bounds=1[v];[1:a]anull[a]`;
 
       await new Promise<void>((resolve, reject) => {
         const command = ffmpeg()

@@ -37,6 +37,8 @@ const VideoGenerator = ({ quote, onClose, onSuccess }: VideoGeneratorProps) => {
   const [position, setPosition] = useState<'top' | 'middle' | 'bottom'>(savedStyles.position || 'middle');
   const [textAlign, setTextAlign] = useState<'left' | 'center' | 'right'>(savedStyles.textAlign || 'center');
   const [aspectRatio, setAspectRatio] = useState<'9:16' | '16:9'>(savedStyles.aspectRatio || '9:16');
+  const [lineHeight, setLineHeight] = useState<number>(savedStyles.lineHeight || 1.3);
+  const [textPadding, setTextPadding] = useState<number>(savedStyles.textPadding || 20);
   const [videoText, setVideoText] = useState(quote.text);
 
   const [generationStatus, setGenerationStatus] = useState<VideoStatus | null>(null);
@@ -222,6 +224,8 @@ const VideoGenerator = ({ quote, onClose, onSuccess }: VideoGeneratorProps) => {
         aspect_ratio: aspectRatio,
         audio_start_time: audioStartTime,
         audio_end_time: audioEndTime,
+        line_height: lineHeight,
+        text_padding: textPadding,
       }); 
 
       // Save styles to localStorage for next time
@@ -231,7 +235,9 @@ const VideoGenerator = ({ quote, onClose, onSuccess }: VideoGeneratorProps) => {
         borderColor,
         position,
         textAlign,
-        aspectRatio
+        aspectRatio,
+        lineHeight,
+        textPadding
       };
       localStorage.setItem('video_generator_styles', JSON.stringify(stylesToSave));
 
@@ -320,6 +326,8 @@ const VideoGenerator = ({ quote, onClose, onSuccess }: VideoGeneratorProps) => {
                   fontSize: `${fontSize}px`,
                   color: fontColor,
                   textAlign: textAlign,
+                  lineHeight: lineHeight,
+                  padding: `${textPadding}px`,
                   textShadow: borderColor === 'transparent' ? 'none' : `-1px -1px 0 ${borderColor}, 1px -1px 0 ${borderColor}, -1px 1px 0 ${borderColor}, 1px 1px 0 ${borderColor}`,
                   whiteSpace: 'pre-wrap'
                 }}
@@ -350,24 +358,24 @@ const VideoGenerator = ({ quote, onClose, onSuccess }: VideoGeneratorProps) => {
               />
             </div>
 
-            <div className="control-section">
-              <h4><Layout size={14} /> Aspect Ratio</h4>
-              <div className="pos-btn-group">
-                <button 
-                  className={`pos-btn ${aspectRatio === '9:16' ? 'active' : ''}`}
-                  onClick={() => setAspectRatio('9:16')}
-                >9:16</button>
-                <button 
-                  className={`pos-btn ${aspectRatio === '16:9' ? 'active' : ''}`}
-                  onClick={() => setAspectRatio('16:9')}
-                >16:9</button>
+            <div className="style-grid-container">
+              <div className="control-section">
+                <h4><Layout size={14} /> Aspect Ratio</h4>
+                <div className="pos-btn-group">
+                  <button 
+                    className={`pos-btn ${aspectRatio === '9:16' ? 'active' : ''}`}
+                    onClick={() => setAspectRatio('9:16')}
+                  >9:16</button>
+                  <button 
+                    className={`pos-btn ${aspectRatio === '16:9' ? 'active' : ''}`}
+                    onClick={() => setAspectRatio('16:9')}
+                  >16:9</button>
+                </div>
               </div>
-            </div>
 
-            <div className="style-grid-container" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <div className="control-section">
                 <h4><Type size={14} /> Font Size: {fontSize}px</h4>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                <div className="flex items-center gap-4">
                   <input 
                     type="range" 
                     min="14" 
@@ -377,48 +385,81 @@ const VideoGenerator = ({ quote, onClose, onSuccess }: VideoGeneratorProps) => {
                     className="range-input"
                     style={{ flex: 1 }}
                   />
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', width: '100%' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <span className="text-xs" title="Text Color">Text:</span>
-                      <input 
-                        type="color" 
-                        value={fontColor} 
-                        onChange={(e) => setFontColor(e.target.value)}
-                        style={{ width: '24px', height: '24px', padding: '0', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-                      />
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <span className="text-xs" title="Border/Outline Color">Out:</span>
-                      <input 
-                        type="color" 
-                        value={borderColor === 'transparent' ? '#000000' : borderColor} 
-                        onChange={(e) => setBorderColor(e.target.value)}
-                        disabled={borderColor === 'transparent'}
-                        style={{ width: '24px', height: '24px', padding: '0', border: 'none', borderRadius: '4px', cursor: borderColor === 'transparent' ? 'not-allowed' : 'pointer', opacity: borderColor === 'transparent' ? 0.5 : 1 }}
-                      />
-                      <button 
-                        className={`btn btn-xs ${borderColor === 'transparent' ? 'btn-primary' : 'btn-outline'}`}
-                        onClick={() => setBorderColor(borderColor === 'transparent' ? '#000000' : 'transparent')}
-                        style={{ padding: '2px 4px', fontSize: '10px' }}
-                      >
-                        {borderColor === 'transparent' ? 'Add' : 'None'}
-                      </button>
-                    </div>
+                </div>
+                <h4 style={{ marginTop: '1rem' }}><AlignLeft size={14} /> Line Spacing: {lineHeight}</h4>
+                <div className="flex items-center gap-4">
+                  <input 
+                    type="range" 
+                    min="1" 
+                    max="2.5" 
+                    step="0.1"
+                    value={lineHeight} 
+                    onChange={(e) => setLineHeight(parseFloat(e.target.value))}
+                    className="range-input"
+                    style={{ flex: 1 }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="style-grid-container">
+              <div className="control-section">
+                <h4><Type size={14} /> Text Colors</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold">Text:</span>
+                    <input 
+                      type="color" 
+                      value={fontColor} 
+                      onChange={(e) => setFontColor(e.target.value)}
+                      style={{ width: '32px', height: '32px', padding: '0', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold">Outline:</span>
+                    <input 
+                      type="color" 
+                      value={borderColor === 'transparent' ? '#000000' : borderColor} 
+                      onChange={(e) => setBorderColor(e.target.value)}
+                      disabled={borderColor === 'transparent'}
+                      style={{ width: '32px', height: '32px', padding: '0', border: 'none', borderRadius: '6px', cursor: borderColor === 'transparent' ? 'not-allowed' : 'pointer', opacity: borderColor === 'transparent' ? 0.5 : 1 }}
+                    />
+                    <button 
+                      className={`btn btn-xs ${borderColor === 'transparent' ? 'btn-primary' : 'btn-outline'}`}
+                      onClick={() => setBorderColor(borderColor === 'transparent' ? '#000000' : 'transparent')}
+                      style={{ padding: '4px 8px', fontSize: '10px' }}
+                    >
+                      {borderColor === 'transparent' ? 'Add' : 'None'}
+                    </button>
                   </div>
                 </div>
               </div>
+
               <div className="control-section">
                 <h4><Layout size={14} /> Position & Align</h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   <div className="pos-btn-group">
-                    <button className={`pos-btn ${position === 'top' ? 'active' : ''}`} onClick={() => setPosition('top')} title="Top">T</button>
-                    <button className={`pos-btn ${position === 'middle' ? 'active' : ''}`} onClick={() => setPosition('middle')} title="Middle">M</button>
-                    <button className={`pos-btn ${position === 'bottom' ? 'active' : ''}`} onClick={() => setPosition('bottom')} title="Bottom">B</button>
+                    <button className={`pos-btn ${position === 'top' ? 'active' : ''}`} onClick={() => setPosition('top')} title="Top">Top</button>
+                    <button className={`pos-btn ${position === 'middle' ? 'active' : ''}`} onClick={() => setPosition('middle')} title="Middle">Center</button>
+                    <button className={`pos-btn ${position === 'bottom' ? 'active' : ''}`} onClick={() => setPosition('bottom')} title="Bottom">Bottom</button>
                   </div>
                   <div className="pos-btn-group">
-                    <button className={`pos-btn ${textAlign === 'left' ? 'active' : ''}`} onClick={() => setTextAlign('left')} title="Align Left"><AlignLeft size={14} /></button>
-                    <button className={`pos-btn ${textAlign === 'center' ? 'active' : ''}`} onClick={() => setTextAlign('center')} title="Align Center"><AlignCenter size={14} /></button>
-                    <button className={`pos-btn ${textAlign === 'right' ? 'active' : ''}`} onClick={() => setTextAlign('right')} title="Align Right"><AlignRight size={14} /></button>
+                    <button className={`pos-btn ${textAlign === 'left' ? 'active' : ''}`} onClick={() => setTextAlign('left')} title="Align Left"><AlignLeft size={16} /></button>
+                    <button className={`pos-btn ${textAlign === 'center' ? 'active' : ''}`} onClick={() => setTextAlign('center')} title="Align Center"><AlignCenter size={16} /></button>
+                    <button className={`pos-btn ${textAlign === 'right' ? 'active' : ''}`} onClick={() => setTextAlign('right')} title="Align Right"><AlignRight size={16} /></button>
+                  </div>
+                  <div style={{ marginTop: '0.5rem' }}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-bold uppercase">Side Padding: {textPadding}px</span>
+                    </div>
+                    <input 
+                      type="range" 
+                      min="0" 
+                      max="100" 
+                      value={textPadding} 
+                      onChange={(e) => setTextPadding(parseInt(e.target.value))}
+                      className="range-input"
+                    />
                   </div>
                 </div>
               </div>

@@ -69,4 +69,12 @@ export class GenerateVideoDto {
   @IsOptional()
   @IsNumber()
   audio_end_time?: number;
+
+  @IsOptional()
+  @IsNumber()
+  line_height?: number;
+
+  @IsOptional()
+  @IsNumber()
+  text_padding?: number;
 }
