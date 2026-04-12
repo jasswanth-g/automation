@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
-import { getQuotes, deleteQuote } from '../api/quote';
+import { getQuotes, deleteQuote, generateQuote } from '../api/quote';
 import type { Quote } from '../types';
 import QuoteForm from '../components/QuoteForm';
 import VideoGenerator from '../components/VideoGenerator';
-import { Loader2, Quote as QuoteIcon, Trash2, Edit, Plus, Filter, CheckCircle2, Clock, Video } from 'lucide-react';
+import { Loader2, Quote as QuoteIcon, Trash2, Edit, Plus, Filter, CheckCircle2, Clock, Video, Sparkles } from 'lucide-react';
 import './QuoteList.css';
 
 const QuoteList = () => {
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
@@ -64,6 +65,17 @@ const QuoteList = () => {
     setSelectedQuoteForVideo(null);
   };
 
+  const handleGenerateQuote = async () => {
+    try {
+      setIsGenerating(true);
+      await generateQuote();
+    } catch (err) {
+      console.error('Failed to generate quote:', err);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   if (loading && quotes.length === 0) {
     return (
       <div className="loading-state">
@@ -81,10 +93,20 @@ const QuoteList = () => {
             <h1>Quotes</h1>
             <p className="subtitle">Manage your collection of inspirational quotes.</p>
           </div>
-          <button onClick={handleAddQuote} className="btn btn-primary">
-            <Plus size={20} />
-            <span>Add Quote</span>
-          </button>
+          <div className="header-actions">
+            <button 
+              onClick={handleGenerateQuote} 
+              className="btn btn-outline"
+              disabled={isGenerating}
+            >
+              {isGenerating ? <Loader2 className="animate-spin" size={20} /> : <Sparkles size={20} />}
+              <span>Generate Quote</span>
+            </button>
+            <button onClick={handleAddQuote} className="btn btn-primary">
+              <Plus size={20} />
+              <span>Add Quote</span>
+            </button>
+          </div>
         </div>
       </header>
 

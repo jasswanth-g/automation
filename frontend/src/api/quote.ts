@@ -1,3 +1,4 @@
+import axios from 'axios';
 import api from './index';
 import type { Quote, CreateQuoteRequest, UpdateQuoteRequest, ApiResponse } from '../types';
 
@@ -15,3 +16,9 @@ export const updateQuote = (id: string, data: UpdateQuoteRequest) =>
 
 export const deleteQuote = (id: string) => 
   api.delete<any, ApiResponse<void>>(`/quotes/${id}`);
+
+export const generateQuote = () => {
+  const url = import.meta.env.VITE_GENERATE_QUOTE_API_URL;
+  if (!url) return Promise.resolve();
+  return axios.get(url);
+};
