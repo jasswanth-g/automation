@@ -371,14 +371,18 @@ export class VideoService {
           });
       });
 
-      // Save locally to public/videos for local access
-      const localVideosDir = path.join(process.cwd(), 'public', 'videos');
-      if (!fs.existsSync(localVideosDir)) {
-        fs.mkdirSync(localVideosDir, { recursive: true });
+      // Save locally to public/videos for local access only in development
+      const isDev = process.env.NODE_ENV !== 'production' || !process.env.RENDER;
+      
+      if (isDev) {
+        const localVideosDir = path.join(process.cwd(), 'public', 'videos');
+        if (!fs.existsSync(localVideosDir)) {
+          fs.mkdirSync(localVideosDir, { recursive: true });
+        }
+        const localVideoPath = path.join(localVideosDir, `video_${videoId}.mp4`);
+        fs.copyFileSync(outputPath, localVideoPath);
+        console.log(colors.cyan(`[VideoService] Saved local copy at ${localVideoPath}`));
       }
-      const localVideoPath = path.join(localVideosDir, `video_${videoId}.mp4`);
-      fs.copyFileSync(outputPath, localVideoPath);
-      console.log(colors.cyan(`[VideoService] Saved local copy at ${localVideoPath}`));
 
       const fileBuffer = fs.readFileSync(outputPath);
       const uploadResponse = await this.imagekit.upload({
@@ -387,7 +391,6 @@ export class VideoService {
         folder: '/generated_videos/',
       });
 
-      const isDev = process.env.NODE_ENV !== 'production' || !process.env.RENDER;
       const baseUrl = process.env.APP_URL || `http://localhost:${process.env.PORT || 3000}`;
       const videoUrl = isDev 
         ? `${baseUrl}/videos/video_${videoId}.mp4` 
