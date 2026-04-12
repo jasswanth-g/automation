@@ -80,6 +80,10 @@ export interface VideoStatus {
   quote_id?: string;
   song_id?: string;
   created_at: string;
+  quotes?: {
+    text: string;
+    author?: string;
+  };
 }
 export interface GenerateVideoRequest {
   quote_id: string;

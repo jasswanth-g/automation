@@ -12,7 +12,7 @@ const QuoteList = () => {
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
-  const [filter, setFilter] = useState<{ status?: string; video_status?: string }>({});
+  const [filter, setFilter] = useState<{ status?: string; video_status?: string }>({ video_status: 'pending' });
   
   const [selectedQuoteForVideo, setSelectedQuoteForVideo] = useState<Quote | null>(null);
 

@@ -10,6 +10,10 @@ export interface VideoMetadata {
   song_id?: string;
   created_at?: string;
   updated_at?: string;
+  quotes?: {
+    text: string;
+    author?: string;
+  };
 }
 
 export class VideoRepository {
@@ -23,7 +27,7 @@ export class VideoRepository {
     const { data, error } = await this.supabase
       .from('videos')
       .insert([video])
-      .select()
+      .select('*, quotes(text, author)')
       .single();
 
     if (error) throw new Error(`Supabase Create Video Error: ${error.message}`);
@@ -33,7 +37,7 @@ export class VideoRepository {
   async findById(id: string): Promise<VideoMetadata | null> {
     const { data, error } = await this.supabase
       .from('videos')
-      .select('*')
+      .select('*, quotes(text, author)')
       .eq('id', id)
       .single();
 
@@ -44,7 +48,7 @@ export class VideoRepository {
   async findAll(): Promise<VideoMetadata[]> {
     const { data, error } = await this.supabase
       .from('videos')
-      .select('*')
+      .select('*, quotes(text, author)')
       .order('created_at', { ascending: false });
 
     if (error) throw new Error(`Supabase List Videos Error: ${error.message}`);

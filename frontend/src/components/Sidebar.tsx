@@ -25,6 +25,10 @@ const Sidebar = () => {
             <Quote size={20} />
             <span>Quotes</span>
           </NavLink>
+          <NavLink to="/videos" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
+            <Film size={20} />
+            <span>Videos</span>
+          </NavLink>
         </div>
       </nav>
     </aside>
