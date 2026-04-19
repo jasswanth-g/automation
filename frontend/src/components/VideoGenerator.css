@@ -29,6 +29,16 @@
   width: 100% !important;
 }
 
+.page-content {
+  width: 100%;
+  background-color: white;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 4rem);
+  overflow: visible !important;
+}
+
 .modal-header {
   padding: 1.25rem 1.5rem;
   border-bottom: 1px solid var(--border-color);
@@ -42,7 +52,13 @@
   grid-template-columns: 1fr 1.2fr;
   gap: 1.5rem;
   padding: 1.5rem;
-  overflow-y: auto;
+}
+
+.video-gen-container.page-layout {
+  grid-template-columns: 1fr 1fr;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 /* Preview Column */
@@ -51,7 +67,9 @@
   flex-direction: column;
   align-items: center;
   position: sticky;
-  top: 0;
+  top: 1rem;
+  align-self: start;
+  z-index: 10;
 }
 
 .wysiwyg-preview {

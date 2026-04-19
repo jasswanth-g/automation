@@ -6,6 +6,7 @@ import MovieForm from './pages/MovieForm';
 import QuoteList from './pages/QuoteList';
 import SongList from './pages/SongList';
 import VideoList from './pages/VideoList';
+import VideoGeneratorPage from './pages/VideoGeneratorPage';
 import './App.css';
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
             <Route path="/songs" element={<SongList />} />
             <Route path="/quotes" element={<QuoteList />} />
             <Route path="/videos" element={<VideoList />} />
+            <Route path="/video/generate/:id" element={<VideoGeneratorPage />} />
             <Route path="/movie/new" element={<MovieForm />} />
 ...
 

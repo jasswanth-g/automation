@@ -10,9 +10,10 @@ interface VideoGeneratorProps {
   quote: Quote;
   onClose: () => void;
   onSuccess: () => void;
+  isPage?: boolean;
 }
 
-const VideoGenerator = ({ quote, onClose, onSuccess }: VideoGeneratorProps) => {
+const VideoGenerator = ({ quote, onClose, onSuccess, isPage = false }: VideoGeneratorProps) => {
   const [movies, setMovies] = useState<Movie[]>([]);
   const [selectedMovieId, setSelectedMovieId] = useState<string>('');
   const [songs, setSongs] = useState<Song[]>([]);
@@ -262,414 +263,434 @@ const VideoGenerator = ({ quote, onClose, onSuccess }: VideoGeneratorProps) => {
   const currentMovie = movies.find(m => m.id === selectedMovieId);
 
   if (generationStatus && isPolling) {
+    const loaderContent = (
+      <div className={`card text-center p-8 ${!isPage ? 'modal-content' : 'page-content'}`}>
+        <Loader2 className="animate-spin mx-auto text-primary mb-4" size={48} />
+        <h3>Generating Video...</h3>
+        <p className="text-muted mt-2">We're processing your video. This may take a minute.</p>
+        <p className="status-text mt-4">Status: <span className="capitalize font-bold">{generationStatus.status}</span></p>
+      </div>
+    );
+
+    if (isPage) return loaderContent;
+
     return (
       <div className="modal-overlay">
-        <div className="modal-content card text-center p-8">
-          <Loader2 className="animate-spin mx-auto text-primary mb-4" size={48} />
-          <h3>Generating Video...</h3>
-          <p className="text-muted mt-2">We're processing your video. This may take a minute.</p>
-          <p className="status-text mt-4">Status: <span className="capitalize font-bold">{generationStatus.status}</span></p>
-        </div>
+        {loaderContent}
       </div>
     );
   }
 
   if (generationStatus?.status === 'completed') {
+    const successContent = (
+      <div className={`card text-center p-8 ${!isPage ? 'modal-content' : 'page-content'}`} onClick={e => e.stopPropagation()} style={{ maxWidth: '450px', margin: isPage ? '2rem auto' : 'auto' }}>
+        <CheckCircle2 className="mx-auto text-green-500 mb-4" size={64} />
+        <h3>Video Generated Successfully!</h3>
+        <p className="text-muted mt-2 mb-4">Your video has been created.</p>
+        
+        <div className="video-preview-container mb-6" style={{ borderRadius: '8px', overflow: 'hidden', backgroundColor: '#000', aspectRatio: '9/16' }}>
+          <video 
+            src={generationStatus.url} 
+            controls 
+            autoPlay
+            className="w-full h-full"
+            style={{ maxHeight: '400px', width: '100%', display: 'block' }}
+          />
+        </div>
+
+        <div className="success-actions">
+          <a href={generationStatus.url} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
+            Open Video
+          </a>
+          <button onClick={onClose} className="btn btn-outline">Close</button>
+        </div>
+      </div>
+    );
+
+    if (isPage) return successContent;
+
     return (
       <div className="modal-overlay" onClick={onClose}>
-        <div className="modal-content card text-center p-8" onClick={e => e.stopPropagation()} style={{ maxWidth: '450px' }}>
-          <CheckCircle2 className="mx-auto text-green-500 mb-4" size={64} />
-          <h3>Video Generated Successfully!</h3>
-          <p className="text-muted mt-2 mb-4">Your video has been created.</p>
-          
-          <div className="video-preview-container mb-6" style={{ borderRadius: '8px', overflow: 'hidden', backgroundColor: '#000', aspectRatio: '9/16' }}>
-            <video 
-              src={generationStatus.url} 
-              controls 
-              autoPlay
-              className="w-full h-full"
-              style={{ maxHeight: '400px', width: '100%', display: 'block' }}
-            />
-          </div>
-
-          <div className="success-actions">
-            <a href={generationStatus.url} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
-              Open Video
-            </a>
-            <button onClick={onClose} className="btn btn-outline">Close</button>
-          </div>
-        </div>
+        {successContent}
       </div>
     );
   }
 
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content card video-gen-modal" onClick={e => e.stopPropagation()}>
-        <header className="modal-header">
-          <div className="title-with-icon">
-            <Video size={20} className="text-primary" />
-            <h3>WYSIWYG Video Generator</h3>
-          </div>
+  const mainContent = (
+    <div className={`card ${!isPage ? 'video-gen-modal modal-content' : 'page-content'}`} onClick={e => e.stopPropagation()}>
+      <header className="modal-header">
+        <div className="title-with-icon">
+          <Video size={20} className="text-primary" />
+          <h3>{isPage ? 'Edit Video Generation' : 'WYSIWYG Video Generator'}</h3>
+        </div>
+        {!isPage && (
           <button onClick={onClose} className="close-btn">
             <X size={20} />
           </button>
-        </header>
+        )}
+      </header>
 
-        <div className="video-gen-container">
-          {/* LEFT: PREVIEW */}
-          <div className="video-preview-column">
-            <div className={`wysiwyg-preview ratio-${aspectRatio.replace(':', '-')}`}>
-              <div 
-                className={`preview-overlay-text ${position}`}
-                style={{
-                  fontSize: `${fontSize}px`,
-                  color: fontColor,
-                  textAlign: textAlign,
-                  lineHeight: lineHeight,
-                  padding: `${textPadding}px`,
-                  textShadow: borderColor === 'transparent' ? 'none' : `-1px -1px 0 ${borderColor}, 1px -1px 0 ${borderColor}, -1px 1px 0 ${borderColor}, 1px 1px 0 ${borderColor}`,
-                  whiteSpace: 'pre-wrap'
-                }}
-              >
-                {videoText}
-              </div>
+      <div className={`video-gen-container ${isPage ? 'page-layout' : ''}`}>
+        {/* LEFT: PREVIEW */}
+        <div className="video-preview-column">
+          <div className={`wysiwyg-preview ratio-${aspectRatio.replace(':', '-')}`}>
+            <div 
+              className={`preview-overlay-text ${position}`}
+              style={{
+                fontSize: `${fontSize}px`,
+                color: fontColor,
+                textAlign: textAlign,
+                lineHeight: lineHeight,
+                padding: `${textPadding}px`,
+                textShadow: borderColor === 'transparent' ? 'none' : `-1px -1px 0 ${borderColor}, 1px -1px 0 ${borderColor}, -1px 1px 0 ${borderColor}, 1px 1px 0 ${borderColor}`,
+                whiteSpace: 'pre-wrap'
+              }}
+            >
+              {videoText}
             </div>
-            <p className="text-xs text-muted mt-4">Live Preview ({aspectRatio})</p>
+          </div>
+          <p className="text-xs text-muted mt-4">Live Preview ({aspectRatio})</p>
+        </div>
+
+        {/* RIGHT: CONTROLS */}
+        <div className="video-controls-column">
+          {error && (
+            <div className="form-error flex items-center gap-2">
+              <AlertCircle size={18} />
+              <span>{error}</span>
+            </div>
+          )}
+
+          <div className="control-section">
+            <h4><AlignLeft size={14} /> Edit Video Text</h4>
+            <textarea 
+              className="video-text-editor"
+              value={videoText}
+              onChange={(e) => setVideoText(e.target.value)}
+              placeholder="Enter text here... use Enter for new lines"
+              rows={4}
+            />
           </div>
 
-          {/* RIGHT: CONTROLS */}
-          <div className="video-controls-column">
-            {error && (
-              <div className="form-error flex items-center gap-2">
-                <AlertCircle size={18} />
-                <span>{error}</span>
+          <div className="style-grid-container">
+            <div className="control-section">
+              <h4><Layout size={14} /> Aspect Ratio</h4>
+              <div className="pos-btn-group">
+                <button 
+                  className={`pos-btn ${aspectRatio === '9:16' ? 'active' : ''}`}
+                  onClick={() => setAspectRatio('9:16')}
+                >9:16</button>
+                <button 
+                  className={`pos-btn ${aspectRatio === '16:9' ? 'active' : ''}`}
+                  onClick={() => setAspectRatio('16:9')}
+                >16:9</button>
+              </div>
+            </div>
+
+            <div className="control-section">
+              <h4><Type size={14} /> Font Size: {fontSize}px</h4>
+              <div className="flex items-center gap-4">
+                <input 
+                  type="range" 
+                  min="14" 
+                  max="48" 
+                  value={fontSize} 
+                  onChange={(e) => setFontSize(parseInt(e.target.value))}
+                  className="range-input"
+                  style={{ flex: 1 }}
+                />
+              </div>
+              <h4 style={{ marginTop: '1rem' }}><AlignLeft size={14} /> Line Spacing: {lineHeight}</h4>
+              <div className="flex items-center gap-4">
+                <input 
+                  type="range" 
+                  min="1" 
+                  max="2.5" 
+                  step="0.1"
+                  value={lineHeight} 
+                  onChange={(e) => setLineHeight(parseFloat(e.target.value))}
+                  className="range-input"
+                  style={{ flex: 1 }}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="style-grid-container">
+            <div className="control-section">
+              <h4><Type size={14} /> Text Colors</h4>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold">Text:</span>
+                  <input 
+                    type="color" 
+                    value={fontColor} 
+                    onChange={(e) => setFontColor(e.target.value)}
+                    style={{ width: '32px', height: '32px', padding: '0', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold">Outline:</span>
+                  <input 
+                    type="color" 
+                    value={borderColor === 'transparent' ? '#000000' : borderColor} 
+                    onChange={(e) => setBorderColor(e.target.value)}
+                    disabled={borderColor === 'transparent'}
+                    style={{ width: '32px', height: '32px', padding: '0', border: 'none', borderRadius: '6px', cursor: borderColor === 'transparent' ? 'not-allowed' : 'pointer', opacity: borderColor === 'transparent' ? 0.5 : 1 }}
+                  />
+                  <button 
+                    className={`btn btn-xs ${borderColor === 'transparent' ? 'btn-primary' : 'btn-outline'}`}
+                    onClick={() => setBorderColor(borderColor === 'transparent' ? '#000000' : 'transparent')}
+                    style={{ padding: '4px 8px', fontSize: '10px' }}
+                  >
+                    {borderColor === 'transparent' ? 'Add' : 'None'}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="control-section">
+              <h4><Layout size={14} /> Position & Align</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <div className="pos-btn-group">
+                  <button className={`pos-btn ${position === 'top' ? 'active' : ''}`} onClick={() => setPosition('top')} title="Top">Top</button>
+                  <button className={`pos-btn ${position === 'middle' ? 'active' : ''}`} onClick={() => setPosition('middle')} title="Middle">Center</button>
+                  <button className={`pos-btn ${position === 'bottom' ? 'active' : ''}`} onClick={() => setPosition('bottom')} title="Bottom">Bottom</button>
+                </div>
+                <div className="pos-btn-group">
+                  <button className={`pos-btn ${textAlign === 'left' ? 'active' : ''}`} onClick={() => setTextAlign('left')} title="Align Left"><AlignLeft size={16} /></button>
+                  <button className={`pos-btn ${textAlign === 'center' ? 'active' : ''}`} onClick={() => setTextAlign('center')} title="Align Center"><AlignCenter size={16} /></button>
+                  <button className={`pos-btn ${textAlign === 'right' ? 'active' : ''}`} onClick={() => setTextAlign('right')} title="Align Right"><AlignRight size={16} /></button>
+                </div>
+                <div style={{ marginTop: '0.5rem' }}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-bold uppercase">Side Padding: {textPadding}px</span>
+                  </div>
+                  <input 
+                    type="range" 
+                    min="0" 
+                    max="100" 
+                    value={textPadding} 
+                    onChange={(e) => setTextPadding(parseInt(e.target.value))}
+                    className="range-input"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="control-section">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h4 style={{ marginBottom: 0 }}><Music size={14} /> Background Music</h4>
+              {selectedSongId && totalDuration > 0 && (
+                <button 
+                  className={`btn btn-xs ${isPlaying ? 'btn-primary' : 'btn-outline'}`}
+                  onClick={toggleAudioPreview}
+                  style={{ padding: '2px 8px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                >
+                  {isPlaying ? <Pause size={12} /> : <Play size={12} />}
+                  {isPlaying ? 'Stop' : 'Preview'}
+                </button>
+              )}
+            </div>
+            
+            <div className="music-selector-trigger" onClick={() => {
+              setIsMusicModalOpen(true);
+              setTempSelectedMovieId(selectedMovieId || null);
+              if (selectedMovieId) fetchAllSongs(selectedMovieId);
+            }} style={{ cursor: 'pointer', padding: '0.75rem', border: '1px solid var(--border-color)', borderRadius: '6px', background: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span className="text-xs text-muted" style={{ fontSize: '0.65rem', textTransform: 'uppercase' }}>Selected Song:</span>
+                <span className="font-bold" style={{ fontSize: '0.9rem' }}>{currentSong ? (currentSong as any).name : 'No Song Selected'}</span>
+                {currentMovie && <span className="text-xs text-muted">Movie: {currentMovie.title}</span>}
+              </div>
+              <Search size={16} className="text-primary" />
+            </div>
+
+            {isMusicModalOpen && (
+              <div className="modal-overlay" onClick={() => setIsMusicModalOpen(false)} style={{ zIndex: 1000 }}>
+                <div className="modal-content music-search-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px', width: '90%', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
+                  <header className="modal-header" style={{ padding: '1rem' }}>
+                    <div className="title-with-icon">
+                      {tempSelectedMovieId ? (
+                        <button className="back-btn" onClick={() => setTempSelectedMovieId(null)} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '4px', marginRight: '8px', display: 'flex', alignItems: 'center' }}>
+                          <ArrowLeft size={18} />
+                        </button>
+                      ) : <Music size={18} className="text-primary" />}
+                      <h4 style={{ margin: 0 }}>{tempSelectedMovieId ? 'Select a Song' : 'Select a Movie'}</h4>
+                    </div>
+                    <button onClick={() => setIsMusicModalOpen(false)} className="close-btn" style={{ border: 'none', background: 'none', cursor: 'pointer' }}>
+                      <X size={20} />
+                    </button>
+                  </header>
+
+                  <div className="search-bar-container" style={{ padding: '0 1rem 1rem' }}>
+                    <div className="search-input-wrapper" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                      <Search size={16} style={{ position: 'absolute', left: '10px', color: 'var(--text-muted)' }} />
+                      <input 
+                        type="text" 
+                        placeholder={tempSelectedMovieId ? "Search songs..." : "Search movies..."}
+                        value={musicSearchQuery}
+                        onChange={(e) => setMusicSearchQuery(e.target.value)}
+                        style={{ width: '100%', padding: '0.6rem 0.6rem 0.6rem 2.2rem', borderRadius: '6px', border: '1px solid var(--border-color)', fontSize: '0.9rem' }}
+                        autoFocus
+                      />
+                    </div>
+                  </div>
+
+                  <div className="selection-list-container" style={{ flex: 1, overflowY: 'auto', padding: '0 1rem 1rem' }}>
+                    {!tempSelectedMovieId ? (
+                      <div className="movies-list">
+                        <div 
+                          className="selection-item all-movies" 
+                          onClick={() => handleMovieSelect('')}
+                          style={{ padding: '0.8rem', borderBottom: '1px solid var(--gray-50)', cursor: 'pointer', borderRadius: '4px', marginBottom: '4px' }}
+                        >
+                          <span className="font-bold">-- All Movies --</span>
+                        </div>
+                        {filteredMovies.map(movie => (
+                          <div 
+                            key={movie.id} 
+                            className={`selection-item ${selectedMovieId === movie.id ? 'active' : ''}`}
+                            onClick={() => handleMovieSelect(movie.id)}
+                            style={{ padding: '0.8rem', borderBottom: '1px solid var(--gray-50)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px', borderRadius: '4px' }}
+                          >
+                            <img src={movie.image_url} alt={movie.title} style={{ width: '40px', height: '40px', borderRadius: '4px', objectFit: 'cover' }} />
+                            <span className="font-bold">{movie.title}</span>
+                          </div>
+                        ))}
+                        {filteredMovies.length === 0 && !fetchingMovies && (
+                          <p className="text-center text-muted p-4">No movies found matching "{musicSearchQuery}"</p>
+                        )}
+                        {fetchingMovies && <div className="text-center p-4"><Loader2 className="animate-spin mx-auto" size={24} /></div>}
+                      </div>
+                    ) : (
+                      <div className="songs-list">
+                        <div className="selected-movie-info" style={{ background: 'var(--gray-50)', padding: '0.6rem', borderRadius: '6px', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <img 
+                            src={movies.find(m => m.id === tempSelectedMovieId)?.image_url} 
+                            alt="Movie" 
+                            style={{ width: '30px', height: '30px', borderRadius: '3px', objectFit: 'cover' }} 
+                          />
+                          <span className="text-xs font-bold">Showing songs for: {movies.find(m => m.id === tempSelectedMovieId)?.title || 'All Movies'}</span>
+                        </div>
+                        {filteredSongs.map(song => (
+                          <div 
+                            key={song.id} 
+                            className={`selection-item ${selectedSongId === song.id ? 'active' : ''}`}
+                            onClick={() => handleSongSelect(song.id)}
+                            style={{ padding: '0.8rem', borderBottom: '1px solid var(--gray-50)', cursor: 'pointer', borderRadius: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                          >
+                            <span className="font-bold">{song.name}</span>
+                            {selectedSongId === song.id && <div className="active-dot" style={{ width: '8px', height: '8px', background: 'var(--primary-color)', borderRadius: '50%' }} />}
+                          </div>
+                        ))}
+                        {filteredSongs.length === 0 && !fetchingSongs && (
+                          <p className="text-center text-muted p-4">No songs found matching "{musicSearchQuery}"</p>
+                        )}
+                        {fetchingSongs && <div className="text-center p-4"><Loader2 className="animate-spin mx-auto" size={24} /></div>}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
 
-            <div className="control-section">
-              <h4><AlignLeft size={14} /> Edit Video Text</h4>
-              <textarea 
-                className="video-text-editor"
-                value={videoText}
-                onChange={(e) => setVideoText(e.target.value)}
-                placeholder="Enter text here... use Enter for new lines"
-                rows={4}
-              />
-            </div>
-
-            <div className="style-grid-container">
-              <div className="control-section">
-                <h4><Layout size={14} /> Aspect Ratio</h4>
-                <div className="pos-btn-group">
-                  <button 
-                    className={`pos-btn ${aspectRatio === '9:16' ? 'active' : ''}`}
-                    onClick={() => setAspectRatio('9:16')}
-                  >9:16</button>
-                  <button 
-                    className={`pos-btn ${aspectRatio === '16:9' ? 'active' : ''}`}
-                    onClick={() => setAspectRatio('16:9')}
-                  >16:9</button>
+            {selectedSongId && totalDuration > 0 && (
+              <div className="audio-trim-controls" style={{ marginTop: '1rem', borderTop: '1px dashed var(--border-color)', paddingTop: '1rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Scissors size={14} className="text-muted" />
+                    <span className="text-xs font-bold">Trim Music ({formatTime(audioEndTime - audioStartTime)} selected)</span>
+                  </div>
+                  {isPlaying && (
+                    <span className="text-xs font-mono text-primary animate-pulse">
+                      Playing: {formatTime(audioCurrentTime)}
+                    </span>
+                  )}
                 </div>
-              </div>
-
-              <div className="control-section">
-                <h4><Type size={14} /> Font Size: {fontSize}px</h4>
-                <div className="flex items-center gap-4">
-                  <input 
-                    type="range" 
-                    min="14" 
-                    max="48" 
-                    value={fontSize} 
-                    onChange={(e) => setFontSize(parseInt(e.target.value))}
-                    className="range-input"
-                    style={{ flex: 1 }}
-                  />
-                </div>
-                <h4 style={{ marginTop: '1rem' }}><AlignLeft size={14} /> Line Spacing: {lineHeight}</h4>
-                <div className="flex items-center gap-4">
-                  <input 
-                    type="range" 
-                    min="1" 
-                    max="2.5" 
-                    step="0.1"
-                    value={lineHeight} 
-                    onChange={(e) => setLineHeight(parseFloat(e.target.value))}
-                    className="range-input"
-                    style={{ flex: 1 }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="style-grid-container">
-              <div className="control-section">
-                <h4><Type size={14} /> Text Colors</h4>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold">Text:</span>
-                    <input 
-                      type="color" 
-                      value={fontColor} 
-                      onChange={(e) => setFontColor(e.target.value)}
-                      style={{ width: '32px', height: '32px', padding: '0', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+                
+                {isPlaying && (
+                  <div className="playback-progress-bar" style={{ height: '4px', background: 'var(--border-color)', borderRadius: '2px', marginBottom: '1rem', overflow: 'hidden', position: 'relative' }}>
+                    <div 
+                      style={{ 
+                        position: 'absolute', 
+                        left: `${(audioStartTime / totalDuration) * 100}%`, 
+                        width: `${((audioEndTime - audioStartTime) / totalDuration) * 100}%`,
+                        height: '100%',
+                        background: 'var(--primary-color)',
+                        opacity: 0.2
+                      }} 
+                    />
+                    <div 
+                      style={{ 
+                        position: 'absolute', 
+                        left: `${(audioCurrentTime / totalDuration) * 100}%`, 
+                        width: '2px',
+                        height: '100%',
+                        background: 'var(--primary-color)',
+                        zIndex: 3
+                      }} 
                     />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold">Outline:</span>
-                    <input 
-                      type="color" 
-                      value={borderColor === 'transparent' ? '#000000' : borderColor} 
-                      onChange={(e) => setBorderColor(e.target.value)}
-                      disabled={borderColor === 'transparent'}
-                      style={{ width: '32px', height: '32px', padding: '0', border: 'none', borderRadius: '6px', cursor: borderColor === 'transparent' ? 'not-allowed' : 'pointer', opacity: borderColor === 'transparent' ? 0.5 : 1 }}
-                    />
-                    <button 
-                      className={`btn btn-xs ${borderColor === 'transparent' ? 'btn-primary' : 'btn-outline'}`}
-                      onClick={() => setBorderColor(borderColor === 'transparent' ? '#000000' : 'transparent')}
-                      style={{ padding: '4px 8px', fontSize: '10px' }}
-                    >
-                      {borderColor === 'transparent' ? 'Add' : 'None'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="control-section">
-                <h4><Layout size={14} /> Position & Align</h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  <div className="pos-btn-group">
-                    <button className={`pos-btn ${position === 'top' ? 'active' : ''}`} onClick={() => setPosition('top')} title="Top">Top</button>
-                    <button className={`pos-btn ${position === 'middle' ? 'active' : ''}`} onClick={() => setPosition('middle')} title="Middle">Center</button>
-                    <button className={`pos-btn ${position === 'bottom' ? 'active' : ''}`} onClick={() => setPosition('bottom')} title="Bottom">Bottom</button>
-                  </div>
-                  <div className="pos-btn-group">
-                    <button className={`pos-btn ${textAlign === 'left' ? 'active' : ''}`} onClick={() => setTextAlign('left')} title="Align Left"><AlignLeft size={16} /></button>
-                    <button className={`pos-btn ${textAlign === 'center' ? 'active' : ''}`} onClick={() => setTextAlign('center')} title="Align Center"><AlignCenter size={16} /></button>
-                    <button className={`pos-btn ${textAlign === 'right' ? 'active' : ''}`} onClick={() => setTextAlign('right')} title="Align Right"><AlignRight size={16} /></button>
-                  </div>
-                  <div style={{ marginTop: '0.5rem' }}>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-bold uppercase">Side Padding: {textPadding}px</span>
+                )}
+                
+                <div className="trim-sliders" style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                  <div className="trim-group">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+                      <span className="text-xs">Start: {formatTime(audioStartTime)}</span>
                     </div>
                     <input 
                       type="range" 
                       min="0" 
-                      max="100" 
-                      value={textPadding} 
-                      onChange={(e) => setTextPadding(parseInt(e.target.value))}
+                      max={Math.max(0, totalDuration - 1)} 
+                      step="1"
+                      value={audioStartTime} 
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value);
+                        setAudioStartTime(val);
+                        if (val >= audioEndTime) setAudioEndTime(Math.min(val + 1, totalDuration));
+                      }}
+                      className="range-input"
+                    />
+                  </div>
+                  
+                  <div className="trim-group">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+                      <span className="text-xs">End: {formatTime(audioEndTime)}</span>
+                    </div>
+                    <input 
+                      type="range" 
+                      min={audioStartTime + 1} 
+                      max={totalDuration} 
+                      step="1"
+                      value={audioEndTime} 
+                      onChange={(e) => setAudioEndTime(parseInt(e.target.value))}
                       className="range-input"
                     />
                   </div>
                 </div>
               </div>
-            </div>
+            )}
+          </div>
 
-            <div className="control-section">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h4 style={{ marginBottom: 0 }}><Music size={14} /> Background Music</h4>
-                {selectedSongId && totalDuration > 0 && (
-                  <button 
-                    className={`btn btn-xs ${isPlaying ? 'btn-primary' : 'btn-outline'}`}
-                    onClick={toggleAudioPreview}
-                    style={{ padding: '2px 8px', display: 'flex', alignItems: 'center', gap: '4px' }}
-                  >
-                    {isPlaying ? <Pause size={12} /> : <Play size={12} />}
-                    {isPlaying ? 'Stop' : 'Preview'}
-                  </button>
-                )}
-              </div>
-              
-              <div className="music-selector-trigger" onClick={() => {
-                setIsMusicModalOpen(true);
-                setTempSelectedMovieId(selectedMovieId || null);
-                if (selectedMovieId) fetchAllSongs(selectedMovieId);
-              }} style={{ cursor: 'pointer', padding: '0.75rem', border: '1px solid var(--border-color)', borderRadius: '6px', background: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <span className="text-xs text-muted" style={{ fontSize: '0.65rem', textTransform: 'uppercase' }}>Selected Song:</span>
-                  <span className="font-bold" style={{ fontSize: '0.9rem' }}>{currentSong ? (currentSong as any).name : 'No Song Selected'}</span>
-                  {currentMovie && <span className="text-xs text-muted">Movie: {currentMovie.title}</span>}
-                </div>
-                <Search size={16} className="text-primary" />
-              </div>
-
-              {isMusicModalOpen && (
-                <div className="modal-overlay" onClick={() => setIsMusicModalOpen(false)} style={{ zIndex: 1000 }}>
-                  <div className="modal-content music-search-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px', width: '90%', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
-                    <header className="modal-header" style={{ padding: '1rem' }}>
-                      <div className="title-with-icon">
-                        {tempSelectedMovieId ? (
-                          <button className="back-btn" onClick={() => setTempSelectedMovieId(null)} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '4px', marginRight: '8px', display: 'flex', alignItems: 'center' }}>
-                            <ArrowLeft size={18} />
-                          </button>
-                        ) : <Music size={18} className="text-primary" />}
-                        <h4 style={{ margin: 0 }}>{tempSelectedMovieId ? 'Select a Song' : 'Select a Movie'}</h4>
-                      </div>
-                      <button onClick={() => setIsMusicModalOpen(false)} className="close-btn" style={{ border: 'none', background: 'none', cursor: 'pointer' }}>
-                        <X size={20} />
-                      </button>
-                    </header>
-
-                    <div className="search-bar-container" style={{ padding: '0 1rem 1rem' }}>
-                      <div className="search-input-wrapper" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                        <Search size={16} style={{ position: 'absolute', left: '10px', color: 'var(--text-muted)' }} />
-                        <input 
-                          type="text" 
-                          placeholder={tempSelectedMovieId ? "Search songs..." : "Search movies..."}
-                          value={musicSearchQuery}
-                          onChange={(e) => setMusicSearchQuery(e.target.value)}
-                          style={{ width: '100%', padding: '0.6rem 0.6rem 0.6rem 2.2rem', borderRadius: '6px', border: '1px solid var(--border-color)', fontSize: '0.9rem' }}
-                          autoFocus
-                        />
-                      </div>
-                    </div>
-
-                    <div className="selection-list-container" style={{ flex: 1, overflowY: 'auto', padding: '0 1rem 1rem' }}>
-                      {!tempSelectedMovieId ? (
-                        <div className="movies-list">
-                          <div 
-                            className="selection-item all-movies" 
-                            onClick={() => handleMovieSelect('')}
-                            style={{ padding: '0.8rem', borderBottom: '1px solid var(--gray-50)', cursor: 'pointer', borderRadius: '4px', marginBottom: '4px' }}
-                          >
-                            <span className="font-bold">-- All Movies --</span>
-                          </div>
-                          {filteredMovies.map(movie => (
-                            <div 
-                              key={movie.id} 
-                              className={`selection-item ${selectedMovieId === movie.id ? 'active' : ''}`}
-                              onClick={() => handleMovieSelect(movie.id)}
-                              style={{ padding: '0.8rem', borderBottom: '1px solid var(--gray-50)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px', borderRadius: '4px' }}
-                            >
-                              <img src={movie.image_url} alt={movie.title} style={{ width: '40px', height: '40px', borderRadius: '4px', objectFit: 'cover' }} />
-                              <span className="font-bold">{movie.title}</span>
-                            </div>
-                          ))}
-                          {filteredMovies.length === 0 && !fetchingMovies && (
-                            <p className="text-center text-muted p-4">No movies found matching "{musicSearchQuery}"</p>
-                          )}
-                          {fetchingMovies && <div className="text-center p-4"><Loader2 className="animate-spin mx-auto" size={24} /></div>}
-                        </div>
-                      ) : (
-                        <div className="songs-list">
-                          <div className="selected-movie-info" style={{ background: 'var(--gray-50)', padding: '0.6rem', borderRadius: '6px', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <img 
-                              src={movies.find(m => m.id === tempSelectedMovieId)?.image_url} 
-                              alt="Movie" 
-                              style={{ width: '30px', height: '30px', borderRadius: '3px', objectFit: 'cover' }} 
-                            />
-                            <span className="text-xs font-bold">Showing songs for: {movies.find(m => m.id === tempSelectedMovieId)?.title || 'All Movies'}</span>
-                          </div>
-                          {filteredSongs.map(song => (
-                            <div 
-                              key={song.id} 
-                              className={`selection-item ${selectedSongId === song.id ? 'active' : ''}`}
-                              onClick={() => handleSongSelect(song.id)}
-                              style={{ padding: '0.8rem', borderBottom: '1px solid var(--gray-50)', cursor: 'pointer', borderRadius: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-                            >
-                              <span className="font-bold">{song.name}</span>
-                              {selectedSongId === song.id && <div className="active-dot" style={{ width: '8px', height: '8px', background: 'var(--primary-color)', borderRadius: '50%' }} />}
-                            </div>
-                          ))}
-                          {filteredSongs.length === 0 && !fetchingSongs && (
-                            <p className="text-center text-muted p-4">No songs found matching "{musicSearchQuery}"</p>
-                          )}
-                          {fetchingSongs && <div className="text-center p-4"><Loader2 className="animate-spin mx-auto" size={24} /></div>}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {selectedSongId && totalDuration > 0 && (
-                <div className="audio-trim-controls" style={{ marginTop: '1rem', borderTop: '1px dashed var(--border-color)', paddingTop: '1rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Scissors size={14} className="text-muted" />
-                      <span className="text-xs font-bold">Trim Music ({formatTime(audioEndTime - audioStartTime)} selected)</span>
-                    </div>
-                    {isPlaying && (
-                      <span className="text-xs font-mono text-primary animate-pulse">
-                        Playing: {formatTime(audioCurrentTime)}
-                      </span>
-                    )}
-                  </div>
-                  
-                  {isPlaying && (
-                    <div className="playback-progress-bar" style={{ height: '4px', background: 'var(--border-color)', borderRadius: '2px', marginBottom: '1rem', overflow: 'hidden', position: 'relative' }}>
-                      <div 
-                        style={{ 
-                          position: 'absolute', 
-                          left: `${(audioStartTime / totalDuration) * 100}%`, 
-                          width: `${((audioEndTime - audioStartTime) / totalDuration) * 100}%`,
-                          height: '100%',
-                          background: 'var(--primary-color)',
-                          opacity: 0.2
-                        }} 
-                      />
-                      <div 
-                        style={{ 
-                          position: 'absolute', 
-                          left: `${(audioCurrentTime / totalDuration) * 100}%`, 
-                          width: '2px',
-                          height: '100%',
-                          background: 'var(--primary-color)',
-                          zIndex: 3
-                        }} 
-                      />
-                    </div>
-                  )}
-                  
-                  <div className="trim-sliders" style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-                    <div className="trim-group">
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-                        <span className="text-xs">Start: {formatTime(audioStartTime)}</span>
-                      </div>
-                      <input 
-                        type="range" 
-                        min="0" 
-                        max={Math.max(0, totalDuration - 1)} 
-                        step="1"
-                        value={audioStartTime} 
-                        onChange={(e) => {
-                          const val = parseInt(e.target.value);
-                          setAudioStartTime(val);
-                          if (val >= audioEndTime) setAudioEndTime(Math.min(val + 1, totalDuration));
-                        }}
-                        className="range-input"
-                      />
-                    </div>
-                    
-                    <div className="trim-group">
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-                        <span className="text-xs">End: {formatTime(audioEndTime)}</span>
-                      </div>
-                      <input 
-                        type="range" 
-                        min={audioStartTime + 1} 
-                        max={totalDuration} 
-                        step="1"
-                        value={audioEndTime} 
-                        onChange={(e) => setAudioEndTime(parseInt(e.target.value))}
-                        className="range-input"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="modal-footer-actions">
-              <button onClick={onClose} className="btn btn-outline" disabled={loading}>Cancel</button>
-              <button onClick={handleGenerate} className="btn btn-primary" disabled={loading || !selectedSongId}>
-                {loading ? <Loader2 className="animate-spin" size={18} /> : <Video size={18} />}
-                <span>Generate Video</span>
-              </button>
-            </div>
+          <div className="modal-footer-actions">
+            <button onClick={onClose} className="btn btn-outline" disabled={loading}>Cancel</button>
+            <button onClick={handleGenerate} className="btn btn-primary" disabled={loading || !selectedSongId}>
+              {loading ? <Loader2 className="animate-spin" size={18} /> : <Video size={18} />}
+              <span>Generate Video</span>
+            </button>
           </div>
         </div>
       </div>
+    </div>
+  );
+
+  if (isPage) return mainContent;
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      {mainContent}
     </div>
   );
 };
