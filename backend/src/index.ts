@@ -11,6 +11,7 @@ import { useExpressServer, useContainer } from 'routing-controllers';
 import { Container } from 'typedi';
 import { ResponseInterceptor } from './interceptors/response.interceptor.js';
 import { ErrorMiddleware } from './middlewares/error.middleware.js';
+import { initCronJobs } from './jobs/cron.job.js';
 
 const port = process.env.PORT || 3000;
 
@@ -70,4 +71,7 @@ const baseUrl = process.env.APP_URL || `http://localhost:${port}`;
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
   console.log(`Swagger docs available at ${baseUrl}/api/docs`);
+  
+  // Initialize cron jobs
+  initCronJobs();
 });
