@@ -391,10 +391,7 @@ export class VideoService {
         folder: '/generated_videos/',
       });
 
-      const baseUrl = process.env.APP_URL || `http://localhost:${process.env.PORT || 3000}`;
-      const videoUrl = isDev 
-        ? `${baseUrl}/videos/video_${videoId}.mp4` 
-        : uploadResponse.url;
+      const videoUrl = uploadResponse.url;
 
       await this.videoRepository.update(videoId, {
         status: 'completed',
