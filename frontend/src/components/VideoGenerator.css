@@ -15,13 +15,14 @@
 
 .modal-content {
   width: 100%;
-  background-color: white;
+  background-color: var(--modal-bg);
   border-radius: 16px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-lg);
   margin: auto;
   max-height: 95vh;
   display: flex;
   flex-direction: column;
+  border: 1px solid var(--border-color);
 }
 
 .video-gen-modal {
@@ -31,12 +32,13 @@
 
 .page-content {
   width: 100%;
-  background-color: white;
+  background-color: var(--card-bg);
   border-radius: 16px;
   display: flex;
   flex-direction: column;
   min-height: calc(100vh - 4rem);
   overflow: visible !important;
+  border: 1px solid var(--border-color);
 }
 
 .modal-header {
@@ -127,11 +129,11 @@
 }
 
 .control-section {
-  background: white;
+  background: var(--card-bg);
   padding: 1.25rem;
   border-radius: 12px;
   border: 1px solid var(--border-color);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  box-shadow: var(--shadow);
 }
 
 .control-section h4 {
@@ -149,13 +151,21 @@
 .video-text-editor {
   width: 100%;
   padding: 0.75rem;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--input-border);
   border-radius: 8px;
   font-family: inherit;
   font-size: 0.95rem;
   resize: vertical;
   line-height: 1.25;
-  background-color: var(--gray-50);
+  background-color: var(--input-bg);
+  color: var(--text-color);
+  transition: border-color var(--transition-speed), box-shadow var(--transition-speed);
+}
+
+.video-text-editor:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
 }
 
 .style-grid-container {
@@ -167,9 +177,10 @@
 .pos-btn-group {
   display: flex;
   gap: 4px;
-  background: var(--gray-100);
+  background: var(--bg-color);
   padding: 4px;
   border-radius: 8px;
+  border: 1px solid var(--border-color);
 }
 
 .pos-btn {
@@ -181,16 +192,21 @@
   cursor: pointer;
   font-size: 0.8rem;
   font-weight: 600;
-  transition: all 0.2s;
+  color: var(--text-muted);
+  transition: all var(--transition-speed);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
+.pos-btn:hover {
+  color: var(--text-color);
+}
+
 .pos-btn.active {
-  background: white;
-  color: var(--primary-color);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  background: var(--primary);
+  color: white;
+  box-shadow: var(--shadow);
 }
 
 .modal-footer-actions {
@@ -212,10 +228,11 @@
 
 /* Music Search Modal */
 .music-search-modal {
-  background: white !important;
+  background: var(--modal-bg) !important;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border-color);
 }
 
 .music-search-modal .modal-header {
@@ -224,21 +241,22 @@
 }
 
 .selection-item {
-  transition: all 0.2s ease;
+  transition: all var(--transition-speed) ease;
 }
 
 .selection-item:hover {
-  background-color: #f0f7ff;
-  color: var(--primary-color);
+  background-color: var(--sidebar-active-bg);
+  color: var(--primary);
 }
 
 .selection-item.active {
-  background-color: #f0f7ff;
-  border-left: 3px solid var(--primary-color);
+  background-color: var(--sidebar-active-bg);
+  border-left: 3px solid var(--primary);
+  color: var(--primary);
 }
 
 .selection-item.all-movies {
-  background-color: var(--gray-50);
+  background-color: var(--bg-color);
   border: 1px dashed var(--border-color);
 }
 
@@ -247,21 +265,23 @@
 }
 
 .active-dot {
-  box-shadow: 0 0 0 2px white, 0 0 0 4px #f0f7ff;
+  box-shadow: 0 0 0 2px var(--modal-bg), 0 0 0 4px var(--sidebar-active-bg);
+  background-color: var(--primary) !important;
 }
 
 .music-selector-trigger:hover {
-  border-color: var(--primary-color) !important;
-  background-color: var(--gray-50) !important;
+  border-color: var(--primary) !important;
+  background-color: var(--sidebar-active-bg) !important;
 }
 
 .back-btn:hover {
-  background-color: #f3f4f6 !important;
+  background-color: var(--sidebar-active-bg) !important;
+  color: var(--primary) !important;
   border-radius: 50%;
 }
 /* Added Utility Classes */
-.text-primary { color: #2563eb; }
-.text-muted { color: #64748b; }
+.text-primary { color: var(--primary); }
+.text-muted { color: var(--text-muted); }
 .text-xs { font-size: 0.75rem; }
 .font-bold { font-weight: 700; }
 .capitalize { text-transform: capitalize; }
@@ -291,22 +311,12 @@
   cursor: pointer;
 }
 
-/* Ensure consistent button styles within component */
-.btn-primary {
-  background-color: #2563eb;
-  color: white;
+.mx-auto {
+  margin-left: auto;
+  margin-right: auto;
 }
 
-.btn-outline {
-  background-color: transparent;
-  border: 1px solid #e2e8f0;
-  color: #1e293b;
+.text-success {
+  color: var(--success);
 }
 
-.btn-primary:hover {
-  background-color: #1d4ed8;
-}
-
-.btn-outline:hover {
-  background-color: #f1f5f9;
-}

@@ -16,7 +16,9 @@
 .page-header h1 {
   font-size: 2.5rem;
   font-weight: 800;
-  color: var(--text-color);
+  background: linear-gradient(135deg, var(--text-color) 40%, var(--primary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
   margin-bottom: 0.5rem;
 }
 

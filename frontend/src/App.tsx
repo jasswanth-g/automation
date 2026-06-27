@@ -7,13 +7,32 @@ import QuoteList from './pages/QuoteList';
 import SongList from './pages/SongList';
 import VideoList from './pages/VideoList';
 import VideoGeneratorPage from './pages/VideoGeneratorPage';
+import { useState, useEffect } from 'react';
 import './App.css';
 
 function App() {
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    const saved = localStorage.getItem('theme');
+    if (saved === 'light' || saved === 'dark') return saved;
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      return 'dark';
+    }
+    return 'light';
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
+  };
+
   return (
     <Router>
       <div className="app-container">
-        <Sidebar />
+        <Sidebar theme={theme} toggleTheme={toggleTheme} />
         <main className="main-content">
           <Routes>
             <Route path="/" element={<MovieList />} />

@@ -33,11 +33,12 @@
 }
 
 .song-row:hover {
-  background-color: rgba(37, 99, 235, 0.02);
+  background-color: var(--sidebar-active-bg);
 }
 
 .song-row.active {
-  background-color: rgba(37, 99, 235, 0.05);
+  background-color: var(--sidebar-active-bg);
+  box-shadow: inset 4px 0 0 0 var(--primary);
 }
 
 .song-index {

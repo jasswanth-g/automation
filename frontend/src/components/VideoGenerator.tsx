@@ -284,7 +284,7 @@ const VideoGenerator = ({ quote, onClose, onSuccess, isPage = false }: VideoGene
   if (generationStatus?.status === 'completed') {
     const successContent = (
       <div className={`card text-center p-8 ${!isPage ? 'modal-content' : 'page-content'}`} onClick={e => e.stopPropagation()} style={{ maxWidth: '450px', margin: isPage ? '2rem auto' : 'auto' }}>
-        <CheckCircle2 className="mx-auto text-green-500 mb-4" size={64} />
+        <CheckCircle2 className="mx-auto text-success mb-4" size={64} />
         <h3>Video Generated Successfully!</h3>
         <p className="text-muted mt-2 mb-4">Your video has been created.</p>
         
@@ -333,7 +333,10 @@ const VideoGenerator = ({ quote, onClose, onSuccess, isPage = false }: VideoGene
       <div className={`video-gen-container ${isPage ? 'page-layout' : ''}`}>
         {/* LEFT: PREVIEW */}
         <div className="video-preview-column">
-          <div className={`wysiwyg-preview ratio-${aspectRatio.replace(':', '-')}`}>
+          <div 
+            className={`wysiwyg-preview ratio-${aspectRatio.replace(':', '-')}`}
+            style={currentMovie ? { backgroundImage: `url(${currentMovie.image_url})` } : {}}
+          >
             <div 
               className={`preview-overlay-text ${position}`}
               style={{
@@ -498,7 +501,7 @@ const VideoGenerator = ({ quote, onClose, onSuccess, isPage = false }: VideoGene
               setIsMusicModalOpen(true);
               setTempSelectedMovieId(selectedMovieId || null);
               if (selectedMovieId) fetchAllSongs(selectedMovieId);
-            }} style={{ cursor: 'pointer', padding: '0.75rem', border: '1px solid var(--border-color)', borderRadius: '6px', background: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            }} style={{ cursor: 'pointer', padding: '0.75rem', border: '1px solid var(--border-color)', borderRadius: '6px', background: 'var(--input-bg)', color: 'var(--text-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <span className="text-xs text-muted" style={{ fontSize: '0.65rem', textTransform: 'uppercase' }}>Selected Song:</span>
                 <span className="font-bold" style={{ fontSize: '0.9rem' }}>{currentSong ? (currentSong as any).name : 'No Song Selected'}</span>
@@ -532,7 +535,7 @@ const VideoGenerator = ({ quote, onClose, onSuccess, isPage = false }: VideoGene
                         placeholder={tempSelectedMovieId ? "Search songs..." : "Search movies..."}
                         value={musicSearchQuery}
                         onChange={(e) => setMusicSearchQuery(e.target.value)}
-                        style={{ width: '100%', padding: '0.6rem 0.6rem 0.6rem 2.2rem', borderRadius: '6px', border: '1px solid var(--border-color)', fontSize: '0.9rem' }}
+                        style={{ width: '100%', padding: '0.6rem 0.6rem 0.6rem 2.2rem', borderRadius: '6px', border: '1px solid var(--border-color)', fontSize: '0.9rem', backgroundColor: 'var(--input-bg)', color: 'var(--text-color)' }}
                         autoFocus
                       />
                     </div>
@@ -544,7 +547,7 @@ const VideoGenerator = ({ quote, onClose, onSuccess, isPage = false }: VideoGene
                         <div 
                           className="selection-item all-movies" 
                           onClick={() => handleMovieSelect('')}
-                          style={{ padding: '0.8rem', borderBottom: '1px solid var(--gray-50)', cursor: 'pointer', borderRadius: '4px', marginBottom: '4px' }}
+                          style={{ padding: '0.8rem', borderBottom: '1px solid var(--border-color)', cursor: 'pointer', borderRadius: '4px', marginBottom: '4px' }}
                         >
                           <span className="font-bold">-- All Movies --</span>
                         </div>
@@ -553,7 +556,7 @@ const VideoGenerator = ({ quote, onClose, onSuccess, isPage = false }: VideoGene
                             key={movie.id} 
                             className={`selection-item ${selectedMovieId === movie.id ? 'active' : ''}`}
                             onClick={() => handleMovieSelect(movie.id)}
-                            style={{ padding: '0.8rem', borderBottom: '1px solid var(--gray-50)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px', borderRadius: '4px' }}
+                            style={{ padding: '0.8rem', borderBottom: '1px solid var(--border-color)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px', borderRadius: '4px' }}
                           >
                             <img src={movie.image_url} alt={movie.title} style={{ width: '40px', height: '40px', borderRadius: '4px', objectFit: 'cover' }} />
                             <span className="font-bold">{movie.title}</span>
@@ -566,7 +569,7 @@ const VideoGenerator = ({ quote, onClose, onSuccess, isPage = false }: VideoGene
                       </div>
                     ) : (
                       <div className="songs-list">
-                        <div className="selected-movie-info" style={{ background: 'var(--gray-50)', padding: '0.6rem', borderRadius: '6px', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div className="selected-movie-info" style={{ background: 'var(--bg-color)', padding: '0.6rem', borderRadius: '6px', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
                           <img 
                             src={movies.find(m => m.id === tempSelectedMovieId)?.image_url} 
                             alt="Movie" 
@@ -579,10 +582,10 @@ const VideoGenerator = ({ quote, onClose, onSuccess, isPage = false }: VideoGene
                             key={song.id} 
                             className={`selection-item ${selectedSongId === song.id ? 'active' : ''}`}
                             onClick={() => handleSongSelect(song.id)}
-                            style={{ padding: '0.8rem', borderBottom: '1px solid var(--gray-50)', cursor: 'pointer', borderRadius: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                            style={{ padding: '0.8rem', borderBottom: '1px solid var(--border-color)', cursor: 'pointer', borderRadius: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                           >
                             <span className="font-bold">{song.name}</span>
-                            {selectedSongId === song.id && <div className="active-dot" style={{ width: '8px', height: '8px', background: 'var(--primary-color)', borderRadius: '50%' }} />}
+                            {selectedSongId === song.id && <div className="active-dot" style={{ width: '8px', height: '8px', background: 'var(--primary)', borderRadius: '50%' }} />}
                           </div>
                         ))}
                         {filteredSongs.length === 0 && !fetchingSongs && (
@@ -618,7 +621,7 @@ const VideoGenerator = ({ quote, onClose, onSuccess, isPage = false }: VideoGene
                         left: `${(audioStartTime / totalDuration) * 100}%`, 
                         width: `${((audioEndTime - audioStartTime) / totalDuration) * 100}%`,
                         height: '100%',
-                        background: 'var(--primary-color)',
+                        background: 'var(--primary)',
                         opacity: 0.2
                       }} 
                     />
@@ -628,7 +631,7 @@ const VideoGenerator = ({ quote, onClose, onSuccess, isPage = false }: VideoGene
                         left: `${(audioCurrentTime / totalDuration) * 100}%`, 
                         width: '2px',
                         height: '100%',
-                        background: 'var(--primary-color)',
+                        background: 'var(--primary)',
                         zIndex: 3
                       }} 
                     />

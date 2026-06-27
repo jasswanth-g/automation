@@ -1,8 +1,13 @@
 import { NavLink } from 'react-router-dom';
-import { Film, Music, Quote } from 'lucide-react';
+import { Film, Music, Quote, Sun, Moon } from 'lucide-react';
 import './Sidebar.css';
 
-const Sidebar = () => {
+interface SidebarProps {
+  theme: 'light' | 'dark';
+  toggleTheme: () => void;
+}
+
+const Sidebar = ({ theme, toggleTheme }: SidebarProps) => {
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
@@ -31,6 +36,13 @@ const Sidebar = () => {
           </NavLink>
         </div>
       </nav>
+
+      <div className="sidebar-footer">
+        <button className="theme-toggle-btn" onClick={toggleTheme} aria-label="Toggle Theme">
+          {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+          <span>{theme === 'light' ? 'Dark Mode' : 'Light Mode'}</span>
+        </button>
+      </div>
     </aside>
   );
 };

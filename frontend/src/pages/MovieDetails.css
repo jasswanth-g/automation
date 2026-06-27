@@ -16,6 +16,9 @@
 .hero-image {
   flex: 0 0 300px;
   background-color: #000;
+  aspect-ratio: 2 / 3;
+  border-radius: 12px;
+  overflow: hidden;
 }
 
 .hero-image img {
@@ -130,7 +133,7 @@
 
 .song-item.menu-open {
   z-index: 50; /* Elevate card item when menu is open */
-  background-color: rgba(37, 99, 235, 0.03);
+  background-color: var(--sidebar-active-bg);
 }
 
 .song-item:last-child {
@@ -138,11 +141,11 @@
 }
 
 .song-item:hover {
-  background-color: rgba(37, 99, 235, 0.03);
+  background-color: var(--sidebar-active-bg);
 }
 
 .song-item.active {
-  background-color: rgba(37, 99, 235, 0.08);
+  background-color: var(--sidebar-active-bg);
   border-left: 4px solid var(--primary);
 }
 
@@ -168,7 +171,7 @@
 
 .song-item:hover .play-icon-btn {
   color: var(--primary);
-  background-color: rgba(37, 99, 235, 0.1);
+  background-color: var(--sidebar-active-bg);
 }
 
 .song-item.active .play-icon-btn {
@@ -192,7 +195,7 @@
   position: absolute;
   top: 100%;
   right: 0;
-  background-color: white;
+  background-color: var(--modal-bg);
   border: 1px solid var(--border-color);
   border-radius: 0.5rem;
   box-shadow: var(--shadow-md);
@@ -226,7 +229,7 @@
 }
 
 .song-dropdown .dropdown-item.danger:hover {
-  background-color: #fee2e2;
+  background-color: rgba(239, 68, 68, 0.1);
 }
 
 .icon-btn {
@@ -322,7 +325,12 @@
   
   .hero-image {
     flex: 0 0 auto;
-    aspect-ratio: 16 / 9;
+    width: 100%;
+    max-width: 280px;
+    margin: 0 auto;
+    aspect-ratio: 2 / 3;
+    border-radius: 12px;
+    overflow: hidden;
   }
   
   .hero-info {
