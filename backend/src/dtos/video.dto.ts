@@ -26,13 +26,21 @@ import { IsString, IsNotEmpty, IsOptional, IsNumber, IsEnum } from 'class-valida
  */
 
 export class GenerateVideoDto {
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  quote_id!: string;
+  quote_id?: string;
 
   @IsString()
   @IsNotEmpty()
   song_id!: string;
+
+  @IsOptional()
+  @IsString()
+  image_base64?: string;
+
+  @IsOptional()
+  @IsString()
+  image_url?: string;
 
   @IsOptional()
   @IsString()
@@ -57,4 +65,12 @@ export class GenerateVideoDto {
   @IsOptional()
   @IsEnum(['9:16', '16:9'])
   aspect_ratio?: '9:16' | '16:9';
+
+  @IsOptional()
+  @IsNumber()
+  audio_start_time?: number;
+
+  @IsOptional()
+  @IsNumber()
+  audio_end_time?: number;
 }

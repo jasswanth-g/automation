@@ -1,13 +1,21 @@
 .video-gen-modal {
-  max-width: 900px !important;
-  width: 95% !important;
+  max-width: 1200px !important;
+  width: 95vw !important;
+  max-height: 90vh !important;
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 0 !important;
+  overflow: hidden !important;
 }
 
 .video-gen-container {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: auto 1fr;
   gap: 2rem;
-  padding: 1.5rem 0;
+  padding: 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+  align-items: start;
 }
 
 /* Preview Section */
@@ -15,18 +23,21 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
 }
 
 .wysiwyg-preview {
   background-color: #000;
-  background-image: url('https://ik.imagekit.io/jasswanth/test.jpg');
   background-size: cover;
   background-position: center;
   position: relative;
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-  transition: all 0.3s ease;
+  transition: width 0.3s ease, height 0.3s ease;
+  flex-shrink: 0;
 }
 
 .wysiwyg-preview.ratio-9-16 {
@@ -167,12 +178,15 @@
   margin-top: 2rem;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 960px) {
   .video-gen-container {
     grid-template-columns: 1fr;
+    gap: 1.5rem;
   }
   
   .video-preview-column {
+    position: relative;
+    top: auto;
     order: -1;
   }
 }
@@ -213,3 +227,17 @@
 .style-grid-container {
   margin-top: 0.5rem;
 }
+
+.custom-file-upload {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  cursor: pointer;
+}
+
+.audio-preview-wrapper audio {
+  outline: none;
+  background-color: #f1f5f9;
+}
+

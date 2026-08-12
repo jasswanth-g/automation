@@ -1,0 +1,19 @@
+{
+  "name": "automation",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n \"backend,frontend\" -c \"cyan,magenta\" \"npm --prefix backend run dev\" \"npm --prefix frontend run dev\"",
+    "local": "concurrently -n \"backend,frontend\" -c \"cyan,magenta\" \"npm --prefix backend run dev:local\" \"npm --prefix frontend run dev\"",
+    "dev:local": "concurrently -n \"backend,frontend\" -c \"cyan,magenta\" \"npm --prefix backend run dev:local\" \"npm --prefix frontend run dev\"",
+    "dev:bun": "concurrently -n \"backend,frontend\" -c \"cyan,magenta\" \"bun --cwd backend run dev\" \"bun --cwd frontend run dev\"",
+    "local:bun": "concurrently -n \"backend,frontend\" -c \"cyan,magenta\" \"bun --cwd backend run dev:local\" \"bun --cwd frontend run dev\"",
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:backend:local": "npm --prefix backend run dev:local",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "build": "npm --prefix backend run build && npm --prefix frontend run build"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

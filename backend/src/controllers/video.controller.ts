@@ -30,13 +30,17 @@ export class VideoController {
     return await videoService.generateVideo(
       body.quote_id,
       body.song_id,
+      body.image_base64,
+      body.image_url,
       {
         text: body.text,
         fontSize: body.font_size,
         fontColor: body.font_color,
         borderColor: body.border_color,
         position: body.position,
-        aspectRatio: body.aspect_ratio
+        aspectRatio: body.aspect_ratio,
+        audioStartTime: body.audio_start_time,
+        audioEndTime: body.audio_end_time,
       }
     );
   }

@@ -82,15 +82,18 @@ export interface VideoStatus {
   created_at: string;
 }
 export interface GenerateVideoRequest {
-  quote_id: string;
+  quote_id?: string;
   song_id: string;
+  image_base64?: string;
+  image_url?: string;
   text?: string;
   font_size?: number;
-
   font_color?: string;
   border_color?: string;
   position?: 'top' | 'middle' | 'bottom';
   aspect_ratio?: '9:16' | '16:9';
+  audio_start_time?: number;
+  audio_end_time?: number;
 }
 
 export interface ApiResponse<T> {

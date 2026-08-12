@@ -5,6 +5,7 @@ import MovieDetails from './pages/MovieDetails';
 import MovieForm from './pages/MovieForm';
 import QuoteList from './pages/QuoteList';
 import SongList from './pages/SongList';
+import VideoStudio from './pages/VideoStudio';
 import './App.css';
 
 function App() {
@@ -17,9 +18,8 @@ function App() {
             <Route path="/" element={<MovieList />} />
             <Route path="/songs" element={<SongList />} />
             <Route path="/quotes" element={<QuoteList />} />
+            <Route path="/studio" element={<VideoStudio />} />
             <Route path="/movie/new" element={<MovieForm />} />
-...
-
             <Route path="/movie/edit/:id" element={<MovieForm />} />
             <Route path="/movie/:id" element={<MovieDetails />} />
           </Routes>

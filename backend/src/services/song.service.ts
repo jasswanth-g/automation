@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import ImageKit from 'imagekit';
 import { SongRepository } from '../repositories/song.repository.js';
 import type { SongMetadata } from '../repositories/song.repository.js';
@@ -17,6 +19,18 @@ export class SongService {
     this.repository = new SongRepository();
   }
 
+  private saveSongLocally(buffer: Buffer, fileName: string): string {
+    const dir = path.join(process.cwd(), 'public', 'uploads', 'songs');
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    const filePath = path.join(dir, fileName);
+    fs.writeFileSync(filePath, buffer);
+    const port = process.env.PORT || 3000;
+    const baseUrl = process.env.APP_URL || `http://localhost:${port}`;
+    return `${baseUrl}/uploads/songs/${fileName}`;
+  }
+
   async uploadSong(name: string, base64: string, movie_id?: string): Promise<SongMetadata> {
     try {
       console.log(colors.cyan(`[SongService] Starting upload for: ${name}`));
@@ -26,27 +40,39 @@ export class SongService {
       }
 
       const cleanedBase64 = cleanBase64(base64);
-
-      // 1. Decode base64 to buffer
       const buffer = Buffer.from(cleanedBase64, 'base64');
       if (buffer.length === 0) throw new Error('Invalid or empty Base64 string');
 
-      // 2. Upload to ImageKit
-      console.log(colors.yellow(`[SongService] Uploading to ImageKit...`));
-      const uploadResponse = await this.imagekit.upload({
-        file: buffer,
-        fileName: `${name.replace(/\s+/g, '_')}_${Date.now()}.mp3`,
-        folder: '/songs/',
-      });
-      console.log(colors.green(`[SongService] ImageKit upload successful: ${uploadResponse.fileId}`));
+      let audioUrl = '';
+      let fileId = `local_${Date.now()}`;
+      const fileName = `${name.replace(/\s+/g, '_')}_${Date.now()}.mp3`;
 
-      // 3. Store in Supabase
-      console.log(colors.yellow(`[SongService] Storing metadata in Supabase...`));
+      if (process.env.USE_LOCAL_STORAGE !== 'true' && process.env.IMAGEKIT_PUBLIC_KEY) {
+        try {
+          console.log(colors.yellow(`[SongService] Uploading to ImageKit...`));
+          const uploadResponse = await this.imagekit.upload({
+            file: buffer,
+            fileName,
+            folder: '/songs/',
+          });
+          audioUrl = uploadResponse.url;
+          fileId = uploadResponse.fileId;
+          console.log(colors.green(`[SongService] ImageKit upload successful: ${uploadResponse.fileId}`));
+        } catch (ikError: any) {
+          console.warn(colors.yellow(`[SongService] ImageKit failed, saving locally: ${ikError.message}`));
+          audioUrl = this.saveSongLocally(buffer, fileName);
+        }
+      } else {
+        console.log(colors.yellow(`[SongService] Using local file storage...`));
+        audioUrl = this.saveSongLocally(buffer, fileName);
+      }
+
+      console.log(colors.yellow(`[SongService] Storing metadata...`));
       const result = await this.repository.create({
         name,
         movie_id,
-        url: uploadResponse.url,
-        imagekit_file_id: uploadResponse.fileId,
+        url: audioUrl,
+        imagekit_file_id: fileId,
       });
       
       console.log(colors.green(`[SongService] Successfully processed song: ${result.id}`));

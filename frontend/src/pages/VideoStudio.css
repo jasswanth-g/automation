@@ -1,0 +1,155 @@
+.video-studio-page {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.icon-only {
+  padding: 0.6rem !important;
+}
+
+.video-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.video-card {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.video-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.video-thumb-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  max-height: 380px;
+  background-color: #0f172a;
+  overflow: hidden;
+}
+
+.video-player-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+.video-player-wrapper video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.play-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.video-player-wrapper:hover .play-overlay {
+  opacity: 1;
+}
+
+.play-button {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: var(--primary-color, #3b82f6);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-left: 3px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.video-placeholder {
+  width: 100%;
+  height: 100%;
+  background-color: #1e293b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.status-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  letter-spacing: 0.02em;
+  backdrop-filter: blur(4px);
+  z-index: 3;
+}
+
+.status-completed {
+  background-color: rgba(34, 197, 94, 0.85);
+  color: white;
+}
+
+.status-processing, .status-pending {
+  background-color: rgba(234, 179, 8, 0.85);
+  color: white;
+}
+
+.status-failed {
+  background-color: rgba(239, 68, 68, 0.85);
+  color: white;
+}
+
+.video-card-body {
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: white;
+  border-top: 1px solid var(--border-color, #e2e8f0);
+}
+
+.video-date {
+  font-size: 0.8rem;
+  color: var(--text-muted, #64748b);
+}
+
+.video-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2rem;
+}

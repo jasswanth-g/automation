@@ -9,6 +9,7 @@ import os from 'os';
 import path from 'path';
 import { pipeline } from 'stream';
 import { promisify } from 'util';
+import { cleanBase64 } from '../utils/base64.util.js';
 import { MovieRepository } from '../repositories/movie.repository.js';
 import { QuoteRepository } from '../repositories/quote.repository.js';
 import { SongRepository } from '../repositories/song.repository.js';
@@ -49,8 +50,10 @@ export class VideoService {
   }
 
   async generateVideo(
-    quoteId: string,
-    songId: string,
+    quoteId?: string | undefined,
+    songId?: string | undefined,
+    imageBase64?: string | undefined,
+    imageUrl?: string | undefined,
     style?: {
       text?: string | undefined;
       fontSize?: number | undefined;
@@ -58,28 +61,42 @@ export class VideoService {
       borderColor?: string | undefined;
       position?: 'top' | 'middle' | 'bottom' | undefined;
       aspectRatio?: '9:16' | '16:9' | undefined;
+      audioStartTime?: number | undefined;
+      audioEndTime?: number | undefined;
     }
   ): Promise<VideoMetadata> {
-    const quote = await this.quoteRepository.findById(quoteId);
-    if (!quote) throw new Error('Quote not found');
+    let text = style?.text || '';
 
+    if (quoteId) {
+      const quote = await this.quoteRepository.findById(quoteId);
+      if (quote && !text) {
+        text = quote.text;
+      }
+    }
+
+    if (!songId) throw new Error('Song ID is required');
     const song = await this.songRepository.findById(songId);
     if (!song) throw new Error('Song not found');
 
-    let imageUrl: string | undefined = 'https://ik.imagekit.io/jasswanth/test.jpg';
     const audioUrl = song.url;
-    const text = quote.text;
+
+    let targetImageUrl = imageUrl;
+    if (!targetImageUrl && !imageBase64) {
+      targetImageUrl = 'https://ik.imagekit.io/jasswanth/test.jpg';
+    }
 
     const videoData: Partial<VideoMetadata> = {
       status: 'pending',
-      quote_id: quoteId,
       song_id: songId,
     };
+    if (quoteId) {
+      videoData.quote_id = quoteId;
+    }
 
     const videoRecord = await this.videoRepository.create(videoData);
     const videoId = videoRecord.id!;
 
-    this.processVideo(videoId, imageUrl, audioUrl, text, quoteId, style).catch(err => {
+    this.processVideo(videoId, targetImageUrl, imageBase64, audioUrl, text, quoteId, style).catch(err => {
       console.error(colors.red(`[VideoService] Background processing failed for ${videoId}:`), err);
     });
 
@@ -174,6 +191,7 @@ export class VideoService {
   private async processVideo(
     videoId: string,
     imageUrl: string | undefined,
+    imageBase64: string | undefined,
     audioUrl: string,
     text: string,
     quoteId?: string,
@@ -184,6 +202,8 @@ export class VideoService {
       borderColor?: string | undefined;
       position?: 'top' | 'middle' | 'bottom' | undefined;
       aspectRatio?: '9:16' | '16:9' | undefined;
+      audioStartTime?: number | undefined;
+      audioEndTime?: number | undefined;
     }
   ) {
     const tmpDir = path.join(os.tmpdir(), 'video-gen', videoId);
@@ -200,7 +220,13 @@ export class VideoService {
       
       const tasks: Promise<void>[] = [this.downloadFile(audioUrl, audioPath)];
       
-      if (imageUrl) {
+      if (imageBase64) {
+        tasks.push((async () => {
+          const cleaned = cleanBase64(imageBase64);
+          const buffer = Buffer.from(cleaned, 'base64');
+          fs.writeFileSync(imagePath, buffer);
+        })());
+      } else if (imageUrl) {
         tasks.push(this.downloadFile(imageUrl, imagePath));
       } else {
         const defaultImagePath = path.join(process.cwd(), 'test.jpg');
@@ -213,9 +239,20 @@ export class VideoService {
 
       await Promise.all(tasks);
 
-      // Get audio duration to prevent infinite loops
-      const duration = await this.getAudioDuration(audioPath);
-      console.log(colors.cyan(`[VideoService] Detected audio duration: ${duration}s`));
+      // Get total audio duration
+      const totalDuration = await this.getAudioDuration(audioPath);
+      const audioStartTime = Math.max(0, style?.audioStartTime || 0);
+      let audioEndTime = style?.audioEndTime;
+
+      let duration = totalDuration - audioStartTime;
+      if (audioEndTime && audioEndTime > audioStartTime) {
+        duration = audioEndTime - audioStartTime;
+      }
+      if (duration <= 0) {
+        duration = Math.min(30, totalDuration);
+      }
+
+      console.log(colors.cyan(`[VideoService] Total audio: ${totalDuration}s, Trimming segment: ${audioStartTime}s to ${audioStartTime + duration}s (Duration: ${duration}s)`));
 
       let fontPath = 'arial.ttf'; 
       if (process.platform === 'win32') {
@@ -258,42 +295,56 @@ export class VideoService {
 
       const position = style?.position || 'middle';
       const aspectRatio = style?.aspectRatio || '9:16';
-      const customText = style?.text;
-
       // Use 720p base for significantly faster processing
       const width = aspectRatio === '9:16' ? 720 : 1280;
       const height = aspectRatio === '9:16' ? 1280 : 720;
 
-      // Use custom text if provided, otherwise wrap the default quote text
-      let finalDisplayText = customText || text;
-      
-      // Always apply wrapping to ensure it fits the video width, even for custom text
-      // 0.44 factor is a better balance for Arial regular character width
-      // 0.9 factor provides a safe margin that closely matches the preview
-      const maxChars = Math.floor((width * 0.9) / (fontSize * 0.44)); 
-      finalDisplayText = this.wrapText(finalDisplayText, maxChars);
+      const customText = style?.text;
+      // Use custom text if provided, otherwise default quote text
+      let finalDisplayText = customText !== undefined ? customText : text;
 
-      // Write text to a file to handle newlines and special characters correctly in FFmpeg
-      const textFilePath = path.join(tmpDir, 'text.txt');
-      fs.writeFileSync(textFilePath, finalDisplayText);
-      // FFmpeg on Windows needs the path escaped for the filter
-      const escapedTextFilePath = textFilePath.replace(/\\/g, '/').replace(/:/g, '\\:');
+      let hasText = false;
+      let filterComplex = `[0:v]scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height}[v];[1:a]anull[a]`;
 
-      // Match frontend positions precisely
-      let yPos = '(h-text_h)/2';
-      if (position === 'top') yPos = 'h/4-text_h/2';
-      if (position === 'bottom') yPos = '3*h/4-text_h/2';
+      if (finalDisplayText && finalDisplayText.trim().length > 0) {
+        hasText = true;
+        const maxChars = Math.floor((width * 0.9) / (fontSize * 0.44)); 
+        finalDisplayText = this.wrapText(finalDisplayText, maxChars);
 
-      console.log(colors.yellow(`[VideoService] Starting FFmpeg for video ${videoId} (${aspectRatio})...`));
-      
-      const lineSpacing = Math.round(fontSize * 0.2);
-      const filterComplex = `[0:v]scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height},drawtext=fontfile='${fontPath}':textfile='${escapedTextFilePath}':fontsize=${fontSize}:fontcolor='${fontColor}':borderw=${borderWeight}:bordercolor='${borderColor}':x=(w-text_w)/2:y=${yPos}:line_spacing=${lineSpacing}[v];[1:a]anull[a]`;
+        // Write text to a file to handle newlines and special characters correctly in FFmpeg
+        const textFilePath = path.join(tmpDir, 'text.txt');
+        fs.writeFileSync(textFilePath, finalDisplayText);
+        // FFmpeg on Windows needs the path escaped for the filter
+        const escapedTextFilePath = textFilePath.replace(/\\/g, '/').replace(/:/g, '\\:');
+
+        // Match frontend positions precisely
+        let yPos = '(h-text_h)/2';
+        if (position === 'top') yPos = 'h/4-text_h/2';
+        if (position === 'bottom') yPos = '3*h/4-text_h/2';
+
+        const lineSpacing = Math.round(fontSize * 0.2);
+        filterComplex = `[0:v]scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height},drawtext=fontfile='${fontPath}':textfile='${escapedTextFilePath}':fontsize=${fontSize}:fontcolor='${fontColor}':borderw=${borderWeight}:bordercolor='${borderColor}':x=(w-text_w)/2:y=${yPos}:line_spacing=${lineSpacing}[v];[1:a]anull[a]`;
+      }
+
+      console.log(colors.yellow(`[VideoService] Starting FFmpeg for video ${videoId} (${aspectRatio}, text: ${hasText ? 'yes' : 'none'})...`));
+
+      const audioInputOptions: string[] = [];
+      if (audioStartTime > 0) {
+        audioInputOptions.push(`-ss ${audioStartTime}`);
+      }
 
       await new Promise<void>((resolve, reject) => {
         const command = ffmpeg()
           .input(imagePath)
-          .inputOptions(['-loop 1', '-framerate 30'])
-          .input(audioPath)
+          .inputOptions(['-loop 1', '-framerate 30']);
+
+        if (audioInputOptions.length > 0) {
+          command.input(audioPath).inputOptions(audioInputOptions);
+        } else {
+          command.input(audioPath);
+        }
+
+        command
           .complexFilter(filterComplex)
           .outputOptions([
             '-map [v]',
@@ -303,13 +354,13 @@ export class VideoService {
             '-level 4.1',
             '-pix_fmt yuv420p',
             '-r 30',
-            '-preset ultrafast', // Maximum speed
-            '-crf 28',           // Slightly higher CRF for speed
+            '-preset ultrafast',
+            '-crf 28',
             '-c:a aac',
             '-b:a 128k',
             '-ar 48000',
             '-ac 2',
-            `-t ${duration + 0.1}`, // Explicit limit
+            `-t ${duration + 0.1}`,
             '-movflags +faststart',
           ])
           .save(outputPath)
@@ -343,23 +394,32 @@ export class VideoService {
       fs.copyFileSync(outputPath, localVideoPath);
       console.log(colors.cyan(`[VideoService] Saved local copy at ${localVideoPath}`));
 
-      const fileBuffer = fs.readFileSync(outputPath);
-      const uploadResponse = await this.imagekit.upload({
-        file: fileBuffer,
-        fileName: `video_${videoId}.mp4`,
-        folder: '/generated_videos/',
-      });
-
-      const isDev = process.env.NODE_ENV !== 'production' || !process.env.RENDER;
       const baseUrl = process.env.APP_URL || `http://localhost:${process.env.PORT || 3000}`;
-      const videoUrl = isDev 
-        ? `${baseUrl}/videos/video_${videoId}.mp4` 
-        : uploadResponse.url;
+      let videoUrl = `${baseUrl}/videos/video_${videoId}.mp4`;
+      let fileId = `local_${Date.now()}`;
+
+      if (process.env.USE_LOCAL_STORAGE !== 'true' && process.env.IMAGEKIT_PUBLIC_KEY) {
+        try {
+          const fileBuffer = fs.readFileSync(outputPath);
+          const uploadResponse = await this.imagekit.upload({
+            file: fileBuffer,
+            fileName: `video_${videoId}.mp4`,
+            folder: '/generated_videos/',
+          });
+          fileId = uploadResponse.fileId;
+          const isDev = process.env.NODE_ENV !== 'production' || !process.env.RENDER;
+          if (!isDev) {
+            videoUrl = uploadResponse.url;
+          }
+        } catch (ikErr: any) {
+          console.warn(colors.yellow(`[VideoService] ImageKit upload failed, using local video URL: ${ikErr.message}`));
+        }
+      }
 
       await this.videoRepository.update(videoId, {
         status: 'completed',
         url: videoUrl,
-        imagekit_file_id: uploadResponse.fileId,
+        imagekit_file_id: fileId,
       });
 
       if (quoteId) {

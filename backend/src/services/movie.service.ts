@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import ImageKit from 'imagekit';
 import { MovieRepository } from '../repositories/movie.repository.js';
 import type { MovieMetadata } from '../repositories/movie.repository.js';
@@ -20,6 +22,18 @@ export class MovieService {
     this.songRepository = new SongRepository();
   }
 
+  private saveMovieLocally(buffer: Buffer, fileName: string): string {
+    const dir = path.join(process.cwd(), 'public', 'uploads', 'movies');
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    const filePath = path.join(dir, fileName);
+    fs.writeFileSync(filePath, buffer);
+    const port = process.env.PORT || 3000;
+    const baseUrl = process.env.APP_URL || `http://localhost:${port}`;
+    return `${baseUrl}/uploads/movies/${fileName}`;
+  }
+
   async createMovie(title: string, description: string, imageBase64: string): Promise<MovieMetadata> {
     try {
       console.log(colors.cyan(`[MovieService] Creating movie: ${title}`));
@@ -32,19 +46,34 @@ export class MovieService {
       const buffer = Buffer.from(cleanedBase64, 'base64');
       if (buffer.length === 0) throw new Error('Decoded buffer is empty');
 
-      console.log(colors.yellow(`[MovieService] Uploading cover to ImageKit...`));
-      const uploadResponse = await this.imagekit.upload({
-        file: buffer,
-        fileName: `${title.replace(/\s+/g, '_')}_${Date.now()}.jpg`,
-        folder: '/movies/',
-      });
-      console.log(colors.green(`[MovieService] ImageKit upload successful: ${uploadResponse.fileId}`));
+      let imageUrl = '';
+      let fileId = `local_${Date.now()}`;
+      const fileName = `${title.replace(/\s+/g, '_')}_${Date.now()}.jpg`;
+
+      if (process.env.USE_LOCAL_STORAGE !== 'true' && process.env.IMAGEKIT_PUBLIC_KEY) {
+        try {
+          console.log(colors.yellow(`[MovieService] Uploading cover to ImageKit...`));
+          const uploadResponse = await this.imagekit.upload({
+            file: buffer,
+            fileName,
+            folder: '/movies/',
+          });
+          imageUrl = uploadResponse.url;
+          fileId = uploadResponse.fileId;
+          console.log(colors.green(`[MovieService] ImageKit upload successful: ${uploadResponse.fileId}`));
+        } catch (ikError: any) {
+          console.warn(colors.yellow(`[MovieService] ImageKit failed, saving cover locally: ${ikError.message}`));
+          imageUrl = this.saveMovieLocally(buffer, fileName);
+        }
+      } else {
+        console.log(colors.yellow(`[MovieService] Using local cover storage...`));
+        imageUrl = this.saveMovieLocally(buffer, fileName);
+      }
 
       const result = await this.movieRepository.create({
         title,
-        // description,
-        image_url: uploadResponse.url,
-        imagekit_file_id: uploadResponse.fileId,
+        image_url: imageUrl,
+        imagekit_file_id: fileId,
       });
       
       console.log(colors.green(`[MovieService] Successfully created movie: ${result.id}`));
