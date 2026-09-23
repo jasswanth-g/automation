@@ -1,4 +1,4 @@
-import { AlertCircle, AlignLeft, CheckCircle2, Image as ImageIcon, Layout, Loader2, Music, Play, Scissors, Type, Upload, Video, X } from 'lucide-react';
+import { AlertCircle, AlignLeft, CheckCircle2, Image as ImageIcon, Layout, Loader2, Music, Play, Scissors, Sliders, Type, Upload, Video, X } from 'lucide-react';
 import { useEffect, useState, useRef, type ChangeEvent, type SyntheticEvent } from 'react';
 import { getSongs, createSong } from '../api/song';
 import { getMovies } from '../api/movie';
@@ -43,6 +43,12 @@ const VideoGenerator = ({ quote, onClose, onSuccess }: VideoGeneratorProps) => {
   const [position, setPosition] = useState<'top' | 'middle' | 'bottom'>('middle');
   const [aspectRatio, setAspectRatio] = useState<'9:16' | '16:9'>('9:16');
   const [videoText, setVideoText] = useState(quote?.text || '');
+
+  // Fade Effects state
+  const [fadeInDuration, setFadeInDuration] = useState<number>(1);
+  const [fadeOutDuration, setFadeOutDuration] = useState<number>(1);
+  const [applyVideoFade, setApplyVideoFade] = useState<boolean>(true);
+  const [applyAudioFade, setApplyAudioFade] = useState<boolean>(true);
 
   const [generationStatus, setGenerationStatus] = useState<VideoStatus | null>(null);
   const [isPolling, setIsPolling] = useState(false);
@@ -232,6 +238,12 @@ const VideoGenerator = ({ quote, onClose, onSuccess }: VideoGeneratorProps) => {
         aspect_ratio: aspectRatio,
         audio_start_time: audioStartTime,
         audio_end_time: audioEndTime,
+        fade_in_duration: fadeInDuration,
+        fade_out_duration: fadeOutDuration,
+        video_fade_in: applyVideoFade ? fadeInDuration : 0,
+        video_fade_out: applyVideoFade ? fadeOutDuration : 0,
+        audio_fade_in: applyAudioFade ? fadeInDuration : 0,
+        audio_fade_out: applyAudioFade ? fadeOutDuration : 0,
       };
 
       if (quote?.id) {
@@ -536,6 +548,64 @@ const VideoGenerator = ({ quote, onClose, onSuccess }: VideoGeneratorProps) => {
                     </div>
                   </div>
                 )}
+              </div>
+            </div>
+
+            {/* Fade In / Fade Out Controls */}
+            <div className="control-section">
+              <h4><Sliders size={14} /> Fade Effects (In & Out)</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                      <span className="text-xs font-semibold">Fade In:</span>
+                      <span className="text-xs font-bold text-primary">{fadeInDuration}s</span>
+                    </div>
+                    <input 
+                      type="range" 
+                      min="0" 
+                      max="5" 
+                      step="0.5" 
+                      value={fadeInDuration} 
+                      onChange={(e) => setFadeInDuration(parseFloat(e.target.value))}
+                      className="range-input"
+                    />
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                      <span className="text-xs font-semibold">Fade Out:</span>
+                      <span className="text-xs font-bold text-primary">{fadeOutDuration}s</span>
+                    </div>
+                    <input 
+                      type="range" 
+                      min="0" 
+                      max="5" 
+                      step="0.5" 
+                      value={fadeOutDuration} 
+                      onChange={(e) => setFadeOutDuration(parseFloat(e.target.value))}
+                      className="range-input"
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '1.25rem', paddingTop: '0.25rem' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', cursor: 'pointer' }}>
+                    <input 
+                      type="checkbox" 
+                      checked={applyVideoFade} 
+                      onChange={(e) => setApplyVideoFade(e.target.checked)} 
+                    />
+                    <span>Video Fade (Black transition)</span>
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', cursor: 'pointer' }}>
+                    <input 
+                      type="checkbox" 
+                      checked={applyAudioFade} 
+                      onChange={(e) => setApplyAudioFade(e.target.checked)} 
+                    />
+                    <span>Audio Fade (Volume transition)</span>
+                  </label>
+                </div>
               </div>
             </div>
 

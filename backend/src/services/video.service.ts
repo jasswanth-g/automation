@@ -63,6 +63,12 @@ export class VideoService {
       aspectRatio?: '9:16' | '16:9' | undefined;
       audioStartTime?: number | undefined;
       audioEndTime?: number | undefined;
+      fadeInDuration?: number | undefined;
+      fadeOutDuration?: number | undefined;
+      audioFadeIn?: number | undefined;
+      audioFadeOut?: number | undefined;
+      videoFadeIn?: number | undefined;
+      videoFadeOut?: number | undefined;
     }
   ): Promise<VideoMetadata> {
     let text = style?.text || '';
@@ -204,6 +210,12 @@ export class VideoService {
       aspectRatio?: '9:16' | '16:9' | undefined;
       audioStartTime?: number | undefined;
       audioEndTime?: number | undefined;
+      fadeInDuration?: number | undefined;
+      fadeOutDuration?: number | undefined;
+      audioFadeIn?: number | undefined;
+      audioFadeOut?: number | undefined;
+      videoFadeIn?: number | undefined;
+      videoFadeOut?: number | undefined;
     }
   ) {
     const tmpDir = path.join(os.tmpdir(), 'video-gen', videoId);
@@ -295,16 +307,31 @@ export class VideoService {
 
       const position = style?.position || 'middle';
       const aspectRatio = style?.aspectRatio || '9:16';
-      // Use 720p base for significantly faster processing
-      const width = aspectRatio === '9:16' ? 720 : 1280;
-      const height = aspectRatio === '9:16' ? 1280 : 720;
+      // Use 1080p Full HD base for highest quality video generation
+      const width = aspectRatio === '9:16' ? 1080 : 1920;
+      const height = aspectRatio === '9:16' ? 1920 : 1080;
 
       const customText = style?.text;
       // Use custom text if provided, otherwise default quote text
       let finalDisplayText = customText !== undefined ? customText : text;
 
+      // Calculate video fade in/out durations (capped at duration / 2)
+      const rawVideoFadeIn = style?.videoFadeIn ?? style?.fadeInDuration ?? 0;
+      const rawVideoFadeOut = style?.videoFadeOut ?? style?.fadeOutDuration ?? 0;
+      const videoFadeInDuration = Math.min(Math.max(0, rawVideoFadeIn), duration / 2);
+      const videoFadeOutDuration = Math.min(Math.max(0, rawVideoFadeOut), duration / 2);
+
+      // Calculate audio fade in/out durations (capped at duration / 2)
+      const rawAudioFadeIn = style?.audioFadeIn ?? style?.fadeInDuration ?? 0;
+      const rawAudioFadeOut = style?.audioFadeOut ?? style?.fadeOutDuration ?? 0;
+      const audioFadeInDuration = Math.min(Math.max(0, rawAudioFadeIn), duration / 2);
+      const audioFadeOutDuration = Math.min(Math.max(0, rawAudioFadeOut), duration / 2);
+
       let hasText = false;
-      let filterComplex = `[0:v]scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height}[v];[1:a]anull[a]`;
+      const vFilters: string[] = [
+        `scale=${width}:${height}:force_original_aspect_ratio=increase`,
+        `crop=${width}:${height}`
+      ];
 
       if (finalDisplayText && finalDisplayText.trim().length > 0) {
         hasText = true;
@@ -323,8 +350,29 @@ export class VideoService {
         if (position === 'bottom') yPos = '3*h/4-text_h/2';
 
         const lineSpacing = Math.round(fontSize * 0.2);
-        filterComplex = `[0:v]scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height},drawtext=fontfile='${fontPath}':textfile='${escapedTextFilePath}':fontsize=${fontSize}:fontcolor='${fontColor}':borderw=${borderWeight}:bordercolor='${borderColor}':x=(w-text_w)/2:y=${yPos}:line_spacing=${lineSpacing}[v];[1:a]anull[a]`;
+        vFilters.push(`drawtext=fontfile='${fontPath}':textfile='${escapedTextFilePath}':fontsize=${fontSize}:fontcolor='${fontColor}':borderw=${borderWeight}:bordercolor='${borderColor}':x=(w-text_w)/2:y=${yPos}:line_spacing=${lineSpacing}`);
       }
+
+      if (videoFadeInDuration > 0) {
+        vFilters.push(`fade=t=in:st=0:d=${videoFadeInDuration}`);
+      }
+      if (videoFadeOutDuration > 0) {
+        const fadeOutStart = Math.max(0, duration - videoFadeOutDuration);
+        vFilters.push(`fade=t=out:st=${fadeOutStart.toFixed(2)}:d=${videoFadeOutDuration}`);
+      }
+
+      const aFilters: string[] = [];
+      if (audioFadeInDuration > 0) {
+        aFilters.push(`afade=t=in:st=0:d=${audioFadeInDuration}`);
+      }
+      if (audioFadeOutDuration > 0) {
+        const fadeOutStart = Math.max(0, duration - audioFadeOutDuration);
+        aFilters.push(`afade=t=out:st=${fadeOutStart.toFixed(2)}:d=${audioFadeOutDuration}`);
+      }
+
+      const vFilterChain = `[0:v]${vFilters.join(',')}[v]`;
+      const aFilterChain = aFilters.length > 0 ? `[1:a]${aFilters.join(',')}[a]` : `[1:a]anull[a]`;
+      const filterComplex = `${vFilterChain};${aFilterChain}`;
 
       console.log(colors.yellow(`[VideoService] Starting FFmpeg for video ${videoId} (${aspectRatio}, text: ${hasText ? 'yes' : 'none'})...`));
 
@@ -351,13 +399,13 @@ export class VideoService {
             '-map [a]',
             '-c:v libx264',
             '-profile:v high',
-            '-level 4.1',
+            '-level 4.2',
             '-pix_fmt yuv420p',
             '-r 30',
-            '-preset ultrafast',
-            '-crf 28',
+            '-preset medium',
+            '-crf 18',
             '-c:a aac',
-            '-b:a 128k',
+            '-b:a 256k',
             '-ar 48000',
             '-ac 2',
             `-t ${duration + 0.1}`,

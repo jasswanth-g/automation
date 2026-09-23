@@ -41,6 +41,12 @@ export class VideoController {
         aspectRatio: body.aspect_ratio,
         audioStartTime: body.audio_start_time,
         audioEndTime: body.audio_end_time,
+        fadeInDuration: body.fade_in_duration,
+        fadeOutDuration: body.fade_out_duration,
+        audioFadeIn: body.audio_fade_in,
+        audioFadeOut: body.audio_fade_out,
+        videoFadeIn: body.video_fade_in,
+        videoFadeOut: body.video_fade_out,
       }
     );
   }

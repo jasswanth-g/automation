@@ -94,6 +94,12 @@ export interface GenerateVideoRequest {
   aspect_ratio?: '9:16' | '16:9';
   audio_start_time?: number;
   audio_end_time?: number;
+  fade_in_duration?: number;
+  fade_out_duration?: number;
+  audio_fade_in?: number;
+  audio_fade_out?: number;
+  video_fade_in?: number;
+  video_fade_out?: number;
 }
 
 export interface ApiResponse<T> {

@@ -73,4 +73,28 @@ export class GenerateVideoDto {
   @IsOptional()
   @IsNumber()
   audio_end_time?: number;
+
+  @IsOptional()
+  @IsNumber()
+  fade_in_duration?: number;
+
+  @IsOptional()
+  @IsNumber()
+  fade_out_duration?: number;
+
+  @IsOptional()
+  @IsNumber()
+  audio_fade_in?: number;
+
+  @IsOptional()
+  @IsNumber()
+  audio_fade_out?: number;
+
+  @IsOptional()
+  @IsNumber()
+  video_fade_in?: number;
+
+  @IsOptional()
+  @IsNumber()
+  video_fade_out?: number;
 }
