@@ -63,6 +63,18 @@ export class GenerateVideoDto {
   position?: 'top' | 'middle' | 'bottom';
 
   @IsOptional()
+  @IsEnum(['left', 'center', 'right'])
+  h_position?: 'left' | 'center' | 'right';
+
+  @IsOptional()
+  @IsString()
+  font_family?: string;
+
+  @IsOptional()
+  @IsString()
+  font_style?: string;
+
+  @IsOptional()
   @IsEnum(['9:16', '16:9'])
   aspect_ratio?: '9:16' | '16:9';
 

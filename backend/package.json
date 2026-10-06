@@ -10,7 +10,8 @@
     "type-check": "tsc --noEmit",
     "start": "node --env-file=.env dist/index.js",
     "dev": "npm run type-check && nodemon",
-    "dev:local": "USE_LOCAL_STORAGE=true npm run type-check && USE_LOCAL_STORAGE=true nodemon"
+    "dev:local": "USE_LOCAL_STORAGE=true npm run type-check && USE_LOCAL_STORAGE=true nodemon",
+    "video:local": "USE_LOCAL_STORAGE=true tsx --env-file=.env src/scripts/generate-local.ts"
   },
   "keywords": [],
   "author": "",

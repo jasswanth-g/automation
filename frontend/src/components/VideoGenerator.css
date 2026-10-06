@@ -54,28 +54,81 @@
   position: absolute;
   left: 0;
   right: 0;
-  padding: 0 20px;
-  text-align: center;
+  box-sizing: border-box;
+  padding: 0 8%;
   word-wrap: break-word;
-  line-height: 1.2;
-  font-family: Arial, sans-serif;
+  line-height: 1.35;
   transition: all 0.2s ease;
   z-index: 2;
 }
 
 /* Match FFmpeg y-coordinates precisely */
-.preview-overlay-text.top { 
+.preview-overlay-text.top,
+.preview-overlay-text.v-top { 
   top: 25%; 
+  transform: translateY(-50%);
 }
 
-.preview-overlay-text.middle { 
+.preview-overlay-text.middle,
+.preview-overlay-text.v-middle { 
   top: 50%; 
   transform: translateY(-50%); 
 }
 
-.preview-overlay-text.bottom { 
+.preview-overlay-text.bottom,
+.preview-overlay-text.v-bottom { 
   top: 75%; 
-  transform: translateY(-100%); 
+  transform: translateY(-50%); 
+}
+
+/* Match FFmpeg x-coordinates precisely */
+.preview-overlay-text.h-left {
+  text-align: left !important;
+  padding-left: 8% !important;
+  padding-right: 8% !important;
+}
+
+.preview-overlay-text.h-center {
+  text-align: center !important;
+  padding-left: 8% !important;
+  padding-right: 8% !important;
+}
+
+.preview-overlay-text.h-right {
+  text-align: right !important;
+  padding-left: 8% !important;
+  padding-right: 8% !important;
+}
+
+.font-select-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 0.4rem;
+}
+
+.font-btn {
+  padding: 0.35rem 0.5rem;
+  font-size: 0.75rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: white;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.font-btn:hover {
+  border-color: var(--primary-color);
+}
+
+.font-btn.active {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+  font-weight: 600;
 }
 
 /* Controls Section */

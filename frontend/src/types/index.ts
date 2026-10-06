@@ -91,6 +91,9 @@ export interface GenerateVideoRequest {
   font_color?: string;
   border_color?: string;
   position?: 'top' | 'middle' | 'bottom';
+  h_position?: 'left' | 'center' | 'right';
+  font_family?: string;
+  font_style?: string;
   aspect_ratio?: '9:16' | '16:9';
   audio_start_time?: number;
   audio_end_time?: number;

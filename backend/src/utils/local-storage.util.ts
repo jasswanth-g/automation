@@ -62,7 +62,9 @@ export class LocalJSONStore<T extends { id?: string | undefined; created_at?: st
   async update(id: string, updates: Partial<T>): Promise<T> {
     const items = this.readData();
     const index = items.findIndex(item => item.id === id);
-    if (index === -1) throw new Error('Item not found');
+    if (index === -1) {
+      return this.create({ id, ...updates });
+    }
     
     const updatedItem = {
       ...items[index],

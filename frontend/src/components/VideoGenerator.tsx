@@ -41,6 +41,9 @@ const VideoGenerator = ({ quote, onClose, onSuccess }: VideoGeneratorProps) => {
   const [fontColor, setFontColor] = useState('#ffffff');
   const [borderColor, setBorderColor] = useState('#000000');
   const [position, setPosition] = useState<'top' | 'middle' | 'bottom'>('middle');
+  const [hPosition, setHPosition] = useState<'left' | 'center' | 'right'>('center');
+  const [fontFamily, setFontFamily] = useState<'sans' | 'serif' | 'impact' | 'monospace' | 'handwriting'>('sans');
+  const [fontStyle, setFontStyle] = useState<'normal' | 'bold' | 'italic'>('normal');
   const [aspectRatio, setAspectRatio] = useState<'9:16' | '16:9'>('9:16');
   const [videoText, setVideoText] = useState(quote?.text || '');
 
@@ -225,7 +228,7 @@ const VideoGenerator = ({ quote, onClose, onSuccess }: VideoGeneratorProps) => {
       setLoading(true);
       setError(null);
 
-      const scale = aspectRatio === '9:16' ? 2.4 : 2.67;
+      const scale = aspectRatio === '9:16' ? 3.6 : 4.0;
       const scaledFontSize = Math.round(fontSize * scale);
 
       const payload: any = {
@@ -235,6 +238,9 @@ const VideoGenerator = ({ quote, onClose, onSuccess }: VideoGeneratorProps) => {
         font_color: fontColor,
         border_color: borderColor,
         position: position,
+        h_position: hPosition,
+        font_family: fontFamily,
+        font_style: fontStyle,
         aspect_ratio: aspectRatio,
         audio_start_time: audioStartTime,
         audio_end_time: audioEndTime,
@@ -331,11 +337,18 @@ const VideoGenerator = ({ quote, onClose, onSuccess }: VideoGeneratorProps) => {
               style={{ backgroundImage: `url(${activeBgImage})` }}
             >
               <div 
-                className={`preview-overlay-text ${position}`}
+                className={`preview-overlay-text ${position} v-${position} h-${hPosition}`}
                 style={{
                   fontSize: `${fontSize}px`,
                   color: fontColor,
                   textShadow: borderColor === 'transparent' ? 'none' : `-1px -1px 0 ${borderColor}, 1px -1px 0 ${borderColor}, -1px 1px 0 ${borderColor}, 1px 1px 0 ${borderColor}`,
+                  fontFamily: fontFamily === 'serif' ? 'Georgia, serif' :
+                              fontFamily === 'impact' ? 'Impact, "Arial Black", sans-serif' :
+                              fontFamily === 'monospace' ? '"Courier New", monospace' :
+                              fontFamily === 'handwriting' ? '"Comic Sans MS", cursive' :
+                              'Arial, sans-serif',
+                  fontWeight: fontStyle === 'bold' || fontFamily === 'impact' ? 'bold' : 'normal',
+                  fontStyle: fontStyle === 'italic' ? 'italic' : 'normal',
                   whiteSpace: 'pre-wrap'
                 }}
               >
@@ -405,9 +418,90 @@ const VideoGenerator = ({ quote, onClose, onSuccess }: VideoGeneratorProps) => {
               </div>
             </div>
 
+            {/* Font Family & Font Style Section */}
+            <div className="control-section">
+              <h4><Type size={14} /> Font Family & Style</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <div>
+                  <span className="text-xs font-semibold block mb-1">Font Family:</span>
+                  <div className="font-select-grid">
+                    <button 
+                      type="button"
+                      className={`font-btn ${fontFamily === 'sans' ? 'active' : ''}`}
+                      style={{ fontFamily: 'Arial, sans-serif' }}
+                      onClick={() => setFontFamily('sans')}
+                    >
+                      Sans Modern
+                    </button>
+                    <button 
+                      type="button"
+                      className={`font-btn ${fontFamily === 'serif' ? 'active' : ''}`}
+                      style={{ fontFamily: 'Georgia, serif' }}
+                      onClick={() => setFontFamily('serif')}
+                    >
+                      Classic Serif
+                    </button>
+                    <button 
+                      type="button"
+                      className={`font-btn ${fontFamily === 'impact' ? 'active' : ''}`}
+                      style={{ fontFamily: 'Impact, sans-serif' }}
+                      onClick={() => setFontFamily('impact')}
+                    >
+                      Bold Impact
+                    </button>
+                    <button 
+                      type="button"
+                      className={`font-btn ${fontFamily === 'monospace' ? 'active' : ''}`}
+                      style={{ fontFamily: '"Courier New", monospace' }}
+                      onClick={() => setFontFamily('monospace')}
+                    >
+                      Monospace
+                    </button>
+                    <button 
+                      type="button"
+                      className={`font-btn ${fontFamily === 'handwriting' ? 'active' : ''}`}
+                      style={{ fontFamily: '"Comic Sans MS", cursive' }}
+                      onClick={() => setFontFamily('handwriting')}
+                    >
+                      Handwriting
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <span className="text-xs font-semibold block mb-1">Font Style:</span>
+                  <div className="pos-btn-group">
+                    <button 
+                      type="button"
+                      className={`pos-btn ${fontStyle === 'normal' ? 'active' : ''}`}
+                      onClick={() => setFontStyle('normal')}
+                    >
+                      Regular
+                    </button>
+                    <button 
+                      type="button"
+                      className={`pos-btn ${fontStyle === 'bold' ? 'active' : ''}`}
+                      style={{ fontWeight: 'bold' }}
+                      onClick={() => setFontStyle('bold')}
+                    >
+                      Bold
+                    </button>
+                    <button 
+                      type="button"
+                      className={`pos-btn ${fontStyle === 'italic' ? 'active' : ''}`}
+                      style={{ fontStyle: 'italic' }}
+                      onClick={() => setFontStyle('italic')}
+                    >
+                      Italic
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div className="style-grid-container" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <div className="control-section">
-                <h4><Type size={14} /> Font Formatting</h4>
+                <h4><Type size={14} /> Size & Color</h4>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                     <span className="text-xs">Size:</span>
@@ -442,6 +536,7 @@ const VideoGenerator = ({ quote, onClose, onSuccess }: VideoGeneratorProps) => {
                         style={{ width: '24px', height: '24px', padding: '0', border: 'none', borderRadius: '4px', cursor: borderColor === 'transparent' ? 'not-allowed' : 'pointer', opacity: borderColor === 'transparent' ? 0.5 : 1 }}
                       />
                       <button 
+                        type="button"
                         className={`btn btn-xs ${borderColor === 'transparent' ? 'btn-primary' : 'btn-outline'}`}
                         onClick={() => setBorderColor(borderColor === 'transparent' ? '#000000' : 'transparent')}
                         style={{ padding: '2px 4px', fontSize: '10px' }}
@@ -453,11 +548,24 @@ const VideoGenerator = ({ quote, onClose, onSuccess }: VideoGeneratorProps) => {
                 </div>
               </div>
               <div className="control-section">
-                <h4><Layout size={14} /> Vertical Position</h4>
-                <div className="pos-btn-group">
-                  <button className={`pos-btn ${position === 'top' ? 'active' : ''}`} onClick={() => setPosition('top')}>Top</button>
-                  <button className={`pos-btn ${position === 'middle' ? 'active' : ''}`} onClick={() => setPosition('middle')}>Center</button>
-                  <button className={`pos-btn ${position === 'bottom' ? 'active' : ''}`} onClick={() => setPosition('bottom')}>Bottom</button>
+                <h4><Layout size={14} /> Text Positioning</h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <div>
+                    <span className="text-xs text-muted block mb-1">Vertical:</span>
+                    <div className="pos-btn-group">
+                      <button type="button" className={`pos-btn ${position === 'top' ? 'active' : ''}`} onClick={() => setPosition('top')}>Top</button>
+                      <button type="button" className={`pos-btn ${position === 'middle' ? 'active' : ''}`} onClick={() => setPosition('middle')}>Center</button>
+                      <button type="button" className={`pos-btn ${position === 'bottom' ? 'active' : ''}`} onClick={() => setPosition('bottom')}>Bottom</button>
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-xs text-muted block mb-1">Horizontal:</span>
+                    <div className="pos-btn-group">
+                      <button type="button" className={`pos-btn ${hPosition === 'left' ? 'active' : ''}`} onClick={() => setHPosition('left')}>Left</button>
+                      <button type="button" className={`pos-btn ${hPosition === 'center' ? 'active' : ''}`} onClick={() => setHPosition('center')}>Center</button>
+                      <button type="button" className={`pos-btn ${hPosition === 'right' ? 'active' : ''}`} onClick={() => setHPosition('right')}>Right</button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

@@ -11,6 +11,8 @@
     "dev:backend": "npm --prefix backend run dev",
     "dev:backend:local": "npm --prefix backend run dev:local",
     "dev:frontend": "npm --prefix frontend run dev",
+    "video:local": "npm --prefix backend run video:local --",
+    "generate:video": "npm --prefix backend run video:local --",
     "build": "npm --prefix backend run build && npm --prefix frontend run build"
   },
   "devDependencies": {

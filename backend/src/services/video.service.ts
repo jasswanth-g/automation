@@ -60,6 +60,9 @@ export class VideoService {
       fontColor?: string | undefined;
       borderColor?: string | undefined;
       position?: 'top' | 'middle' | 'bottom' | undefined;
+      hPosition?: 'left' | 'center' | 'right' | undefined;
+      fontFamily?: string | undefined;
+      fontStyle?: string | undefined;
       aspectRatio?: '9:16' | '16:9' | undefined;
       audioStartTime?: number | undefined;
       audioEndTime?: number | undefined;
@@ -132,39 +135,111 @@ export class VideoService {
     }
   }
 
-  private wrapText(text: string, maxChars: number): string {
-    const words = text.split(' ');
-    let lines: string[] = [];
-    let currentLine = '';
+  private wrapText(text: string, maxChars: number): string[] {
+    const normalized = text.replace(/\\n/g, '\n');
+    const rawSegments = normalized.split(/\r?\n/);
+    const resultLines: string[] = [];
 
-    words.forEach(word => {
-      if ((currentLine + word).length <= maxChars) {
-        currentLine += (currentLine ? ' ' : '') + word;
-      } else {
-        lines.push(currentLine);
-        currentLine = word;
+    for (const segment of rawSegments) {
+      if (!segment.trim()) {
+        resultLines.push('');
+        continue;
       }
-    });
-    lines.push(currentLine);
 
-    return text.split('\n').map(segment => {
       const words = segment.trim().split(/\s+/);
-      let lines: string[] = [];
       let currentLine = '';
 
-      words.forEach(word => {
-        if (!word) return;
-        const testLine = currentLine ? `${currentLine} ${word}` : word;
-        if (testLine.length <= maxChars) {
-          currentLine = testLine;
+      for (const word of words) {
+        if (!currentLine) {
+          currentLine = word;
+        } else if ((currentLine + ' ' + word).length <= maxChars) {
+          currentLine += ' ' + word;
         } else {
-          if (currentLine) lines.push(currentLine);
+          resultLines.push(currentLine);
           currentLine = word;
         }
-      });
-      if (currentLine) lines.push(currentLine);
-      return lines.join('\n');
-    }).join('\n');
+      }
+      if (currentLine) {
+        resultLines.push(currentLine);
+      }
+    }
+
+    return resultLines;
+  }
+
+  private resolveFontPath(family?: string, style?: string): string {
+    const fam = (family || 'sans').toLowerCase();
+    const st = (style || 'normal').toLowerCase();
+    const isBold = st.includes('bold') || fam === 'impact';
+    const isItalic = st.includes('italic');
+
+    if (process.platform === 'win32') {
+      let winFont = 'arial.ttf';
+      if (fam.includes('serif') || fam.includes('georgia') || fam.includes('times')) {
+        winFont = isBold ? (isItalic ? 'georgiaz.ttf' : 'georgiab.ttf') : (isItalic ? 'georgiai.ttf' : 'georgia.ttf');
+      } else if (fam.includes('impact') || fam.includes('display')) {
+        winFont = 'impact.ttf';
+      } else if (fam.includes('mono') || fam.includes('courier')) {
+        winFont = isBold ? 'courbd.ttf' : 'cour.ttf';
+      } else if (fam.includes('hand') || fam.includes('comic')) {
+        winFont = isBold ? 'comicbd.ttf' : 'comic.ttf';
+      } else {
+        winFont = isBold ? (isItalic ? 'arialbi.ttf' : 'arialbd.ttf') : (isItalic ? 'ariali.ttf' : 'arial.ttf');
+      }
+      return `C:/Windows/Fonts/${winFont}`.replace(/:/g, '\\:');
+    }
+
+    if (process.platform === 'darwin') {
+      let macCandidates: string[] = [];
+      if (fam.includes('serif') || fam.includes('georgia') || fam.includes('times')) {
+        macCandidates = isBold
+          ? (isItalic ? ['/System/Library/Fonts/Supplemental/Georgia Bold Italic.ttf', '/System/Library/Fonts/Supplemental/Times New Roman Bold Italic.ttf']
+                      : ['/System/Library/Fonts/Supplemental/Georgia Bold.ttf', '/System/Library/Fonts/Supplemental/Times New Roman Bold.ttf'])
+          : (isItalic ? ['/System/Library/Fonts/Supplemental/Georgia Italic.ttf', '/System/Library/Fonts/Supplemental/Times New Roman Italic.ttf']
+                      : ['/System/Library/Fonts/Supplemental/Georgia.ttf', '/System/Library/Fonts/Supplemental/Times New Roman.ttf']);
+      } else if (fam.includes('impact') || fam.includes('display')) {
+        macCandidates = [
+          '/System/Library/Fonts/Supplemental/Impact.ttf',
+          '/System/Library/Fonts/Supplemental/Arial Black.ttf'
+        ];
+      } else if (fam.includes('mono') || fam.includes('courier')) {
+        macCandidates = isBold
+          ? (isItalic ? ['/System/Library/Fonts/Supplemental/Courier New Bold Italic.ttf']
+                      : ['/System/Library/Fonts/Supplemental/Courier New Bold.ttf'])
+          : (isItalic ? ['/System/Library/Fonts/Supplemental/Courier New Italic.ttf']
+                      : ['/System/Library/Fonts/Supplemental/Courier New.ttf']);
+      } else if (fam.includes('hand') || fam.includes('comic')) {
+        macCandidates = isBold
+          ? ['/System/Library/Fonts/Supplemental/Comic Sans MS Bold.ttf']
+          : ['/System/Library/Fonts/Supplemental/Comic Sans MS.ttf'];
+      } else {
+        macCandidates = isBold
+          ? (isItalic ? ['/System/Library/Fonts/Supplemental/Arial Bold Italic.ttf']
+                      : ['/System/Library/Fonts/Supplemental/Arial Bold.ttf'])
+          : (isItalic ? ['/System/Library/Fonts/Supplemental/Arial Italic.ttf']
+                      : ['/System/Library/Fonts/Supplemental/Arial.ttf']);
+      }
+
+      for (const p of macCandidates) {
+        if (fs.existsSync(p)) return p;
+      }
+      if (fs.existsSync('/System/Library/Fonts/Supplemental/Arial.ttf')) {
+        return '/System/Library/Fonts/Supplemental/Arial.ttf';
+      }
+      return 'arial.ttf';
+    }
+
+    // Linux
+    const linuxFonts = [
+      '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+      '/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf',
+      '/usr/share/fonts/truetype/freefont/FreeSans.ttf',
+      'arial.ttf'
+    ];
+    for (const f of linuxFonts) {
+      if (fs.existsSync(f)) return f;
+    }
+    return 'arial.ttf';
   }
 
   private async getAudioDuration(audioPath: string): Promise<number> {
@@ -194,7 +269,7 @@ export class VideoService {
     }
   }
 
-  private async processVideo(
+  public async processVideo(
     videoId: string,
     imageUrl: string | undefined,
     imageBase64: string | undefined,
@@ -207,6 +282,9 @@ export class VideoService {
       fontColor?: string | undefined;
       borderColor?: string | undefined;
       position?: 'top' | 'middle' | 'bottom' | undefined;
+      hPosition?: 'left' | 'center' | 'right' | undefined;
+      fontFamily?: string | undefined;
+      fontStyle?: string | undefined;
       aspectRatio?: '9:16' | '16:9' | undefined;
       audioStartTime?: number | undefined;
       audioEndTime?: number | undefined;
@@ -230,7 +308,22 @@ export class VideoService {
     try {
       await this.videoRepository.update(videoId, { status: 'processing' });
       
-      const tasks: Promise<void>[] = [this.downloadFile(audioUrl, audioPath)];
+      const tasks: Promise<void>[] = [];
+
+      // Check if audio is locally hosted or on disk
+      if (audioUrl.includes('localhost') && audioUrl.includes('/uploads/')) {
+        const localRel = audioUrl.substring(audioUrl.indexOf('/uploads/'));
+        const localPath = path.join(process.cwd(), 'public', localRel);
+        if (fs.existsSync(localPath)) {
+          fs.copyFileSync(localPath, audioPath);
+        } else {
+          tasks.push(this.downloadFile(audioUrl, audioPath));
+        }
+      } else if (fs.existsSync(audioUrl)) {
+        fs.copyFileSync(audioUrl, audioPath);
+      } else {
+        tasks.push(this.downloadFile(audioUrl, audioPath));
+      }
       
       if (imageBase64) {
         tasks.push((async () => {
@@ -239,7 +332,19 @@ export class VideoService {
           fs.writeFileSync(imagePath, buffer);
         })());
       } else if (imageUrl) {
-        tasks.push(this.downloadFile(imageUrl, imagePath));
+        if (imageUrl.includes('localhost') && imageUrl.includes('/uploads/')) {
+          const localRel = imageUrl.substring(imageUrl.indexOf('/uploads/'));
+          const localPath = path.join(process.cwd(), 'public', localRel);
+          if (fs.existsSync(localPath)) {
+            fs.copyFileSync(localPath, imagePath);
+          } else {
+            tasks.push(this.downloadFile(imageUrl, imagePath));
+          }
+        } else if (fs.existsSync(imageUrl)) {
+          fs.copyFileSync(imageUrl, imagePath);
+        } else {
+          tasks.push(this.downloadFile(imageUrl, imagePath));
+        }
       } else {
         const defaultImagePath = path.join(process.cwd(), 'test.jpg');
         if (fs.existsSync(defaultImagePath)) {
@@ -266,25 +371,7 @@ export class VideoService {
 
       console.log(colors.cyan(`[VideoService] Total audio: ${totalDuration}s, Trimming segment: ${audioStartTime}s to ${audioStartTime + duration}s (Duration: ${duration}s)`));
 
-      let fontPath = 'arial.ttf'; 
-      if (process.platform === 'win32') {
-        // FFmpeg on Windows: use forward slashes and escape the colon
-        fontPath = 'C:/Windows/Fonts/arial.ttf'.replace(/:/g, '\\:');
-      } else {
-        // Common paths on Linux (Render/Ubuntu)
-        const possibleFonts = [
-          '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
-          '/usr/share/fonts/TTF/DejaVuSans.ttf',
-          '/usr/share/fonts/truetype/freefont/FreeSans.ttf',
-          'arial.ttf'
-        ];
-        for (const f of possibleFonts) {
-          if (fs.existsSync(f)) {
-            fontPath = f;
-            break;
-          }
-        }
-      }
+      const fontPath = this.resolveFontPath(style?.fontFamily, style?.fontStyle);
 
       const fontSize = style?.fontSize || 64; 
       let fontColor = style?.fontColor || 'white';
@@ -335,22 +422,37 @@ export class VideoService {
 
       if (finalDisplayText && finalDisplayText.trim().length > 0) {
         hasText = true;
-        const maxChars = Math.floor((width * 0.9) / (fontSize * 0.44)); 
-        finalDisplayText = this.wrapText(finalDisplayText, maxChars);
+        const maxChars = Math.floor((width * 0.84) / (fontSize * 0.52)); 
+        const lines = this.wrapText(finalDisplayText, maxChars);
 
-        // Write text to a file to handle newlines and special characters correctly in FFmpeg
-        const textFilePath = path.join(tmpDir, 'text.txt');
-        fs.writeFileSync(textFilePath, finalDisplayText);
-        // FFmpeg on Windows needs the path escaped for the filter
-        const escapedTextFilePath = textFilePath.replace(/\\/g, '/').replace(/:/g, '\\:');
+        const lineHeight = Math.round(fontSize * 1.35);
+        const totalH = lines.length * lineHeight;
 
-        // Match frontend positions precisely
-        let yPos = '(h-text_h)/2';
-        if (position === 'top') yPos = 'h/4-text_h/2';
-        if (position === 'bottom') yPos = '3*h/4-text_h/2';
+        // Match frontend vertical positions precisely
+        let startY = `(h-${totalH})/2`;
+        if (position === 'top') startY = `h*0.25-${totalH}/2`;
+        if (position === 'bottom') startY = `h*0.75-${totalH}/2`;
 
-        const lineSpacing = Math.round(fontSize * 0.2);
-        vFilters.push(`drawtext=fontfile='${fontPath}':textfile='${escapedTextFilePath}':fontsize=${fontSize}:fontcolor='${fontColor}':borderw=${borderWeight}:bordercolor='${borderColor}':x=(w-text_w)/2:y=${yPos}:line_spacing=${lineSpacing}`);
+        // Match frontend horizontal positions precisely
+        const hPosition = style?.hPosition || 'center';
+
+        lines.forEach((line, i) => {
+          if (!line.trim()) return; // Blank lines preserve vertical height via i * lineHeight
+
+          const lineFilePath = path.join(tmpDir, `line_${i}.txt`);
+          fs.writeFileSync(lineFilePath, line);
+          const escapedLineFilePath = lineFilePath.replace(/\\/g, '/').replace(/:/g, '\\:');
+
+          const yPos = `${startY}+${i * lineHeight}`;
+
+          let xPos = '(w-text_w)/2';
+          if (hPosition === 'left') xPos = 'w*0.08';
+          if (hPosition === 'right') xPos = 'w-text_w-w*0.08';
+
+          vFilters.push(
+            `drawtext=fontfile='${fontPath}':textfile='${escapedLineFilePath}':fontsize=${fontSize}:fontcolor='${fontColor}':borderw=${borderWeight}:bordercolor='${borderColor}':x=${xPos}:y=${yPos}`
+          );
+        });
       }
 
       if (videoFadeInDuration > 0) {
