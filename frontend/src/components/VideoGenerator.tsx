@@ -365,15 +365,20 @@ const VideoGenerator = ({ quote, onClose, onSuccess }: VideoGeneratorProps) => {
                   <div 
                     className="preview-overlay-author"
                     style={{
-                      marginTop: `${Math.round(fontSize * lineSpacing * 0.5)}px`,
+                      position: 'absolute',
+                      top: '100%',
+                      left: 0,
+                      right: 0,
+                      paddingLeft: '8%',
+                      paddingRight: '8%',
+                      paddingTop: `${Math.round(fontSize * lineSpacing * 0.5)}px`,
                       fontSize: `${Math.max(10, Math.round(fontSize * 0.55))}px`,
                       lineHeight: lineSpacing,
                       letterSpacing: `${letterSpacing}px`,
                       fontStyle: 'italic',
                       opacity: 0.9,
                       textAlign: 'right',
-                      display: 'block',
-                      width: '100%'
+                      boxSizing: 'border-box'
                     }}
                   >
                     {author.trim().startsWith('-') || author.trim().startsWith('—') ? author.trim() : `— ${author.trim()}`}

@@ -463,12 +463,13 @@ export class VideoService {
           authorLines = this.wrapText(formattedAuthor, authorMaxChars);
         }
 
-        const totalH = (lines.length * lineHeight) + authorGap + (authorLines.length * authorLineHeight);
+        // Base vertical position strictly on quote height so the quote position never shifts when author is provided
+        const quoteH = lines.length * lineHeight;
 
         // Match frontend vertical positions precisely
-        let startY = `(h-${totalH})/2`;
-        if (position === 'top') startY = `h*0.25-${totalH}/2`;
-        if (position === 'bottom') startY = `h*0.75-${totalH}/2`;
+        let startY = `(h-${quoteH})/2`;
+        if (position === 'top') startY = `h*0.25-${quoteH}/2`;
+        if (position === 'bottom') startY = `h*0.75-${quoteH}/2`;
 
         // Match frontend horizontal positions precisely
         const hPosition = style?.hPosition || 'center';
