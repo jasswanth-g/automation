@@ -34,6 +34,7 @@ export class VideoController {
       body.image_url,
       {
         text: body.text,
+        author: body.author,
         fontSize: body.font_size,
         fontColor: body.font_color,
         borderColor: body.border_color,
@@ -42,6 +43,8 @@ export class VideoController {
         fontFamily: body.font_family,
         fontStyle: body.font_style,
         aspectRatio: body.aspect_ratio,
+        lineSpacing: body.line_spacing,
+        letterSpacing: body.letter_spacing,
         audioStartTime: body.audio_start_time,
         audioEndTime: body.audio_end_time,
         fadeInDuration: body.fade_in_duration,

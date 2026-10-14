@@ -1,4 +1,4 @@
-import { AlertCircle, AlignLeft, CheckCircle2, Image as ImageIcon, Layout, Loader2, Music, Play, Scissors, Sliders, Type, Upload, Video, X } from 'lucide-react';
+import { AlertCircle, AlignLeft, CheckCircle2, Image as ImageIcon, Layout, Loader2, Music, Play, Scissors, Sliders, Type, Upload, User, Video, X } from 'lucide-react';
 import { useEffect, useState, useRef, type ChangeEvent, type SyntheticEvent } from 'react';
 import { getSongs, createSong } from '../api/song';
 import { getMovies } from '../api/movie';
@@ -37,21 +37,24 @@ const VideoGenerator = ({ quote, onClose, onSuccess }: VideoGeneratorProps) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Styling state
-  const [fontSize, setFontSize] = useState(24); 
-  const [fontColor, setFontColor] = useState('#ffffff');
-  const [borderColor, setBorderColor] = useState('#000000');
+  const [fontSize, setFontSize] = useState(18); 
+  const [fontColor, setFontColor] = useState('#000000');
+  const [borderColor, setBorderColor] = useState('transparent');
   const [position, setPosition] = useState<'top' | 'middle' | 'bottom'>('middle');
   const [hPosition, setHPosition] = useState<'left' | 'center' | 'right'>('center');
   const [fontFamily, setFontFamily] = useState<'sans' | 'serif' | 'impact' | 'monospace' | 'handwriting'>('sans');
   const [fontStyle, setFontStyle] = useState<'normal' | 'bold' | 'italic'>('normal');
   const [aspectRatio, setAspectRatio] = useState<'9:16' | '16:9'>('9:16');
   const [videoText, setVideoText] = useState(quote?.text || '');
+  const [author, setAuthor] = useState(quote?.author || '');
+  const [lineSpacing, setLineSpacing] = useState<number>(1.35);
+  const [letterSpacing, setLetterSpacing] = useState<number>(0);
 
   // Fade Effects state
-  const [fadeInDuration, setFadeInDuration] = useState<number>(1);
-  const [fadeOutDuration, setFadeOutDuration] = useState<number>(1);
-  const [applyVideoFade, setApplyVideoFade] = useState<boolean>(true);
-  const [applyAudioFade, setApplyAudioFade] = useState<boolean>(true);
+  const [fadeInDuration, setFadeInDuration] = useState<number>(0);
+  const [fadeOutDuration, setFadeOutDuration] = useState<number>(0);
+  const [applyVideoFade, setApplyVideoFade] = useState<boolean>(false);
+  const [applyAudioFade, setApplyAudioFade] = useState<boolean>(false);
 
   const [generationStatus, setGenerationStatus] = useState<VideoStatus | null>(null);
   const [isPolling, setIsPolling] = useState(false);
@@ -234,6 +237,7 @@ const VideoGenerator = ({ quote, onClose, onSuccess }: VideoGeneratorProps) => {
       const payload: any = {
         song_id: selectedSongId,
         text: videoText,
+        author: author.trim() ? author.trim() : undefined,
         font_size: scaledFontSize,
         font_color: fontColor,
         border_color: borderColor,
@@ -242,6 +246,8 @@ const VideoGenerator = ({ quote, onClose, onSuccess }: VideoGeneratorProps) => {
         font_family: fontFamily,
         font_style: fontStyle,
         aspect_ratio: aspectRatio,
+        line_spacing: lineSpacing,
+        letter_spacing: letterSpacing,
         audio_start_time: audioStartTime,
         audio_end_time: audioEndTime,
         fade_in_duration: fadeInDuration,
@@ -349,10 +355,30 @@ const VideoGenerator = ({ quote, onClose, onSuccess }: VideoGeneratorProps) => {
                               'Arial, sans-serif',
                   fontWeight: fontStyle === 'bold' || fontFamily === 'impact' ? 'bold' : 'normal',
                   fontStyle: fontStyle === 'italic' ? 'italic' : 'normal',
-                  whiteSpace: 'pre-wrap'
+                  whiteSpace: 'pre-wrap',
+                  lineHeight: lineSpacing,
+                  letterSpacing: `${letterSpacing}px`
                 }}
               >
-                {videoText}
+                <div>{videoText}</div>
+                {author.trim() && (
+                  <div 
+                    className="preview-overlay-author"
+                    style={{
+                      marginTop: `${Math.round(fontSize * lineSpacing * 0.5)}px`,
+                      fontSize: `${Math.max(10, Math.round(fontSize * 0.55))}px`,
+                      lineHeight: lineSpacing,
+                      letterSpacing: `${letterSpacing}px`,
+                      fontStyle: 'italic',
+                      opacity: 0.9,
+                      textAlign: 'right',
+                      display: 'block',
+                      width: '100%'
+                    }}
+                  >
+                    {author.trim().startsWith('-') || author.trim().startsWith('—') ? author.trim() : `— ${author.trim()}`}
+                  </div>
+                )}
               </div>
             </div>
             <p className="text-xs text-muted mt-4">Live Preview ({aspectRatio})</p>
@@ -399,9 +425,44 @@ const VideoGenerator = ({ quote, onClose, onSuccess }: VideoGeneratorProps) => {
                 className="video-text-editor"
                 value={videoText}
                 onChange={(e) => setVideoText(e.target.value)}
-                placeholder="Enter text here (optional)... use Enter for new lines"
+                placeholder="Enter text or quote here (optional)... use Enter for new lines"
                 rows={3}
               />
+              <div style={{ marginTop: '0.75rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                  <label htmlFor="video-author-input" className="text-xs font-semibold" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', cursor: 'pointer' }}>
+                    <User size={13} className="text-muted" />
+                    <span>Author (Optional):</span>
+                  </label>
+                  {author && (
+                    <button 
+                      type="button" 
+                      onClick={() => setAuthor('')} 
+                      className="text-xs text-muted hover:text-red-500"
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+                <input 
+                  id="video-author-input"
+                  type="text"
+                  className="input-field w-full"
+                  value={author}
+                  onChange={(e) => setAuthor(e.target.value)}
+                  placeholder="e.g. Albert Einstein (optional)"
+                  style={{
+                    width: '100%',
+                    padding: '0.5rem 0.75rem',
+                    borderRadius: '6px',
+                    border: '1px solid var(--border-color)',
+                    fontSize: '0.85rem',
+                    background: 'white',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
             </div>
 
             <div className="control-section">
@@ -565,6 +626,52 @@ const VideoGenerator = ({ quote, onClose, onSuccess }: VideoGeneratorProps) => {
                       <button type="button" className={`pos-btn ${hPosition === 'center' ? 'active' : ''}`} onClick={() => setHPosition('center')}>Center</button>
                       <button type="button" className={`pos-btn ${hPosition === 'right' ? 'active' : ''}`} onClick={() => setHPosition('right')}>Right</button>
                     </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Text Spacing (Line & Letter Spacing) Section */}
+            <div className="control-section">
+              <h4><Sliders size={14} /> Text Spacing</h4>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                    <span className="text-xs font-semibold">Line Spacing:</span>
+                    <span className="text-xs font-bold text-primary">{lineSpacing.toFixed(2)}x</span>
+                  </div>
+                  <input 
+                    type="range" 
+                    min="1.0" 
+                    max="2.5" 
+                    step="0.05" 
+                    value={lineSpacing} 
+                    onChange={(e) => setLineSpacing(parseFloat(e.target.value))}
+                    className="range-input"
+                  />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.2rem' }}>
+                    <span className="text-xs text-muted">Compact (1.0x)</span>
+                    <span className="text-xs text-muted">Spacious (2.5x)</span>
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                    <span className="text-xs font-semibold">Letter Spacing:</span>
+                    <span className="text-xs font-bold text-primary">{letterSpacing}px</span>
+                  </div>
+                  <input 
+                    type="range" 
+                    min="0" 
+                    max="10" 
+                    step="1" 
+                    value={letterSpacing} 
+                    onChange={(e) => setLetterSpacing(parseInt(e.target.value))}
+                    className="range-input"
+                  />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.2rem' }}>
+                    <span className="text-xs text-muted">Normal (0px)</span>
+                    <span className="text-xs text-muted">Wide (10px)</span>
                   </div>
                 </div>
               </div>

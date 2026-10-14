@@ -56,6 +56,7 @@ export class VideoService {
     imageUrl?: string | undefined,
     style?: {
       text?: string | undefined;
+      author?: string | undefined;
       fontSize?: number | undefined;
       fontColor?: string | undefined;
       borderColor?: string | undefined;
@@ -64,6 +65,8 @@ export class VideoService {
       fontFamily?: string | undefined;
       fontStyle?: string | undefined;
       aspectRatio?: '9:16' | '16:9' | undefined;
+      lineSpacing?: number | undefined;
+      letterSpacing?: number | undefined;
       audioStartTime?: number | undefined;
       audioEndTime?: number | undefined;
       fadeInDuration?: number | undefined;
@@ -75,11 +78,17 @@ export class VideoService {
     }
   ): Promise<VideoMetadata> {
     let text = style?.text || '';
+    let author = style?.author;
 
     if (quoteId) {
       const quote = await this.quoteRepository.findById(quoteId);
-      if (quote && !text) {
-        text = quote.text;
+      if (quote) {
+        if (!text) {
+          text = quote.text;
+        }
+        if (author === undefined && quote.author) {
+          author = quote.author;
+        }
       }
     }
 
@@ -105,7 +114,10 @@ export class VideoService {
     const videoRecord = await this.videoRepository.create(videoData);
     const videoId = videoRecord.id!;
 
-    this.processVideo(videoId, targetImageUrl, imageBase64, audioUrl, text, quoteId, style).catch(err => {
+    this.processVideo(videoId, targetImageUrl, imageBase64, audioUrl, text, quoteId, {
+      ...style,
+      author: author !== undefined ? author : style?.author,
+    }).catch(err => {
       console.error(colors.red(`[VideoService] Background processing failed for ${videoId}:`), err);
     });
 
@@ -278,6 +290,7 @@ export class VideoService {
     quoteId?: string,
     style?: {
       text?: string | undefined;
+      author?: string | undefined;
       fontSize?: number | undefined;
       fontColor?: string | undefined;
       borderColor?: string | undefined;
@@ -286,6 +299,8 @@ export class VideoService {
       fontFamily?: string | undefined;
       fontStyle?: string | undefined;
       aspectRatio?: '9:16' | '16:9' | undefined;
+      lineSpacing?: number | undefined;
+      letterSpacing?: number | undefined;
       audioStartTime?: number | undefined;
       audioEndTime?: number | undefined;
       fadeInDuration?: number | undefined;
@@ -373,14 +388,14 @@ export class VideoService {
 
       const fontPath = this.resolveFontPath(style?.fontFamily, style?.fontStyle);
 
-      const fontSize = style?.fontSize || 64; 
-      let fontColor = style?.fontColor || 'white';
+      const fontSize = style?.fontSize || 65; 
+      let fontColor = style?.fontColor || 'black';
       const rawFontColor = fontColor; // Keep for border fallback
       if (fontColor.startsWith('#')) {
         fontColor = fontColor.replace('#', '0x');
       }
       
-      let borderColor = style?.borderColor || 'black';
+      let borderColor = style?.borderColor || 'transparent';
       const borderWeight = (borderColor === 'transparent' || !borderColor) ? 0 : 1;
       
       // If transparent, use the same color as text as a safe fallback for FFmpeg
@@ -401,6 +416,8 @@ export class VideoService {
       const customText = style?.text;
       // Use custom text if provided, otherwise default quote text
       let finalDisplayText = customText !== undefined ? customText : text;
+      const rawAuthor = style?.author;
+      const authorText = rawAuthor ? rawAuthor.trim() : '';
 
       // Calculate video fade in/out durations (capped at duration / 2)
       const rawVideoFadeIn = style?.videoFadeIn ?? style?.fadeInDuration ?? 0;
@@ -422,11 +439,31 @@ export class VideoService {
 
       if (finalDisplayText && finalDisplayText.trim().length > 0) {
         hasText = true;
-        const maxChars = Math.floor((width * 0.84) / (fontSize * 0.52)); 
+        const lineSpacing = style?.lineSpacing ?? 1.35;
+        const letterSpacing = style?.letterSpacing ?? 0;
+
+        const charWidthFactor = 0.52 + (letterSpacing > 0 ? (letterSpacing / 24) * 0.08 : 0);
+        const maxChars = Math.floor((width * 0.84) / (fontSize * charWidthFactor)); 
         const lines = this.wrapText(finalDisplayText, maxChars);
 
-        const lineHeight = Math.round(fontSize * 1.35);
-        const totalH = lines.length * lineHeight;
+        const lineHeight = Math.round(fontSize * lineSpacing);
+
+        // Prepare optional author text: smaller font (0.55x), italic styling, positioned bottom-right
+        let authorLines: string[] = [];
+        const authorFontSize = Math.max(16, Math.round(fontSize * 0.55));
+        const authorLineHeight = Math.round(authorFontSize * lineSpacing);
+        const authorGap = authorText ? Math.round(lineHeight * 0.5) : 0;
+        const authorFontPath = this.resolveFontPath(style?.fontFamily, 'italic');
+
+        if (authorText) {
+          const formattedAuthor = authorText.startsWith('-') || authorText.startsWith('—')
+            ? authorText
+            : `— ${authorText}`;
+          const authorMaxChars = Math.floor((width * 0.84) / (authorFontSize * charWidthFactor));
+          authorLines = this.wrapText(formattedAuthor, authorMaxChars);
+        }
+
+        const totalH = (lines.length * lineHeight) + authorGap + (authorLines.length * authorLineHeight);
 
         // Match frontend vertical positions precisely
         let startY = `(h-${totalH})/2`;
@@ -436,11 +473,18 @@ export class VideoService {
         // Match frontend horizontal positions precisely
         const hPosition = style?.hPosition || 'center';
 
+        const spaceChar = letterSpacing > 7 ? '\u2009\u200A' : letterSpacing >= 4 ? '\u2009' : '\u200A';
+
         lines.forEach((line, i) => {
           if (!line.trim()) return; // Blank lines preserve vertical height via i * lineHeight
 
+          let processedLine = line;
+          if (letterSpacing > 0) {
+            processedLine = line.split(' ').map(w => w.split('').join(spaceChar)).join(' ');
+          }
+
           const lineFilePath = path.join(tmpDir, `line_${i}.txt`);
-          fs.writeFileSync(lineFilePath, line);
+          fs.writeFileSync(lineFilePath, processedLine);
           const escapedLineFilePath = lineFilePath.replace(/\\/g, '/').replace(/:/g, '\\:');
 
           const yPos = `${startY}+${i * lineHeight}`;
@@ -453,6 +497,31 @@ export class VideoService {
             `drawtext=fontfile='${fontPath}':textfile='${escapedLineFilePath}':fontsize=${fontSize}:fontcolor='${fontColor}':borderw=${borderWeight}:bordercolor='${borderColor}':x=${xPos}:y=${yPos}`
           );
         });
+
+        // Render author lines if present
+        if (authorLines.length > 0) {
+          const authorStartY = `${startY}+${lines.length * lineHeight + authorGap}`;
+          authorLines.forEach((aline, j) => {
+            if (!aline.trim()) return;
+
+            let processedAuthorLine = aline;
+            if (letterSpacing > 0) {
+              processedAuthorLine = aline.split(' ').map(w => w.split('').join(spaceChar)).join(' ');
+            }
+
+            const authorLineFilePath = path.join(tmpDir, `author_${j}.txt`);
+            fs.writeFileSync(authorLineFilePath, processedAuthorLine);
+            const escapedAuthorLineFilePath = authorLineFilePath.replace(/\\/g, '/').replace(/:/g, '\\:');
+
+            const yPos = `${authorStartY}+${j * authorLineHeight}`;
+            // Position bottom-right of the text area
+            const xPos = 'w-text_w-w*0.08';
+
+            vFilters.push(
+              `drawtext=fontfile='${authorFontPath}':textfile='${escapedAuthorLineFilePath}':fontsize=${authorFontSize}:fontcolor='${fontColor}':borderw=${borderWeight}:bordercolor='${borderColor}':x=${xPos}:y=${yPos}`
+            );
+          });
+        }
       }
 
       if (videoFadeInDuration > 0) {

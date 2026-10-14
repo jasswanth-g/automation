@@ -87,6 +87,7 @@ export interface GenerateVideoRequest {
   image_base64?: string;
   image_url?: string;
   text?: string;
+  author?: string;
   font_size?: number;
   font_color?: string;
   border_color?: string;
@@ -95,6 +96,8 @@ export interface GenerateVideoRequest {
   font_family?: string;
   font_style?: string;
   aspect_ratio?: '9:16' | '16:9';
+  line_spacing?: number;
+  letter_spacing?: number;
   audio_start_time?: number;
   audio_end_time?: number;
   fade_in_duration?: number;

@@ -47,6 +47,10 @@ export class GenerateVideoDto {
   text?: string;
 
   @IsOptional()
+  @IsString()
+  author?: string;
+
+  @IsOptional()
   @IsNumber()
   font_size?: number;
 
@@ -77,6 +81,14 @@ export class GenerateVideoDto {
   @IsOptional()
   @IsEnum(['9:16', '16:9'])
   aspect_ratio?: '9:16' | '16:9';
+
+  @IsOptional()
+  @IsNumber()
+  line_spacing?: number;
+
+  @IsOptional()
+  @IsNumber()
+  letter_spacing?: number;
 
   @IsOptional()
   @IsNumber()

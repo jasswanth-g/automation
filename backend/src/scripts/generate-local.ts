@@ -28,6 +28,9 @@ async function main() {
   let fontStyle = 'normal';
   let hPosition: 'left' | 'center' | 'right' = 'center';
   let vPosition: 'top' | 'middle' | 'bottom' = 'middle';
+  let lineSpacing = 1.35;
+  let letterSpacing = 0;
+  let author = '';
 
   for (const arg of args) {
     if (arg.startsWith('--font=')) {
@@ -38,6 +41,12 @@ async function main() {
       hPosition = (arg.split('=')[1] as any) || 'center';
     } else if (arg.startsWith('--vpos=')) {
       vPosition = (arg.split('=')[1] as any) || 'middle';
+    } else if (arg.startsWith('--linespacing=')) {
+      lineSpacing = parseFloat(arg.split('=')[1] || '1.35') || 1.35;
+    } else if (arg.startsWith('--letterspacing=')) {
+      letterSpacing = parseInt(arg.split('=')[1] || '0') || 0;
+    } else if (arg.startsWith('--author=')) {
+      author = arg.split('=')[1] || '';
     } else if (!arg.startsWith('--')) {
       quoteText = arg;
     }
@@ -46,8 +55,12 @@ async function main() {
   console.log(colors.yellow(`Input Image : `) + imagePath);
   console.log(colors.yellow(`Input Audio : `) + audioPath);
   console.log(colors.yellow(`Overlay Text: `) + quoteText.replace(/\n/g, ' / '));
+  if (author) {
+    console.log(colors.yellow(`Author      : `) + author);
+  }
   console.log(colors.yellow(`Font Family : `) + `${fontFamily} (${fontStyle})`);
   console.log(colors.yellow(`Position    : `) + `H:${hPosition}, V:${vPosition}`);
+  console.log(colors.yellow(`Spacing     : `) + `Line:${lineSpacing}x, Letter:${letterSpacing}px`);
   console.log(colors.blue(`Starting FFmpeg rendering...\n`));
 
   const startTime = Date.now();
@@ -61,20 +74,24 @@ async function main() {
       quoteText,
       undefined,
       {
-        fontSize: 52,
-        fontColor: 'white',
-        borderColor: 'black',
+        text: quoteText,
+        author: author || undefined,
+        fontSize: 65,
+        fontColor: 'black',
+        borderColor: 'transparent',
         position: vPosition,
         hPosition: hPosition,
         fontFamily: fontFamily,
         fontStyle: fontStyle,
         aspectRatio: '9:16',
+        lineSpacing: lineSpacing,
+        letterSpacing: letterSpacing,
         audioStartTime: 0,
         audioEndTime: 10,
-        videoFadeIn: 1,
-        videoFadeOut: 1,
-        audioFadeIn: 1,
-        audioFadeOut: 1,
+        videoFadeIn: 0,
+        videoFadeOut: 0,
+        audioFadeIn: 0,
+        audioFadeOut: 0,
       }
     );
 
